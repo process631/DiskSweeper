@@ -1,0 +1,179 @@
+[
+  {
+    "id": "user-temp",
+    "title": "Your temporary files",
+    "category": "Junk", "confidence": "Safe", "mode": "contents", "minAgeDays": 2,
+    "paths": ["%TEMP%"],
+    "explanation": "Programs and installers leave temporary files here and often forget them. Only items untouched for 2+ days are included, and anything in use is skipped."
+  },
+  {
+    "id": "windows-temp",
+    "title": "Windows temporary files",
+    "category": "Junk", "confidence": "Safe", "mode": "contents", "minAgeDays": 2, "admin": true,
+    "paths": ["%WINDIR%\\Temp"],
+    "explanation": "Temporary files from Windows Update, installers and services. Only items untouched for 2+ days are included."
+  },
+  {
+    "id": "gpu-shader-cache",
+    "title": "Graphics shader cache",
+    "category": "Junk", "confidence": "Safe", "mode": "contents",
+    "paths": [
+      "%LOCALAPPDATA%\\NVIDIA\\DXCache", "%LOCALAPPDATA%\\NVIDIA\\GLCache", "%APPDATA%\\NVIDIA\\ComputeCache",
+      "%LOCALAPPDATA%\\AMD\\DxCache", "%LOCALAPPDATA%\\AMD\\DxcCache", "%LOCALAPPDATA%\\AMD\\VkCache", "%LOCALAPPDATA%\\AMD\\GLCache",
+      "%LOCALLOW%\\Intel\\ShaderCache", "%LOCALAPPDATA%\\D3DSCache"
+    ],
+    "explanation": "Pre-compiled shaders for games. It refills while you play (the first launch of a game may stutter briefly), and caches of games you no longer have are never cleaned up automatically."
+  },
+  {
+    "id": "driver-installer-leftovers",
+    "title": "Graphics driver installer files",
+    "category": "Junk", "confidence": "Safe", "mode": "folder",
+    "paths": ["%SYSTEMDRIVE%\\AMD", "%SYSTEMDRIVE%\\NVIDIA", "%PROGRAMDATA%\\NVIDIA Corporation\\Downloader"],
+    "explanation": "Extracted driver installers. The installed driver doesn't need them."
+  },
+  {
+    "id": "crash-dumps",
+    "title": "Crash dumps",
+    "category": "Junk", "confidence": "Safe", "mode": "contents",
+    "paths": ["%LOCALAPPDATA%\\CrashDumps"],
+    "explanation": "Memory snapshots saved when programs crashed. Only developers use them."
+  },
+  {
+    "id": "system-crash-dumps",
+    "title": "Windows crash dumps",
+    "category": "Junk", "confidence": "Safe", "mode": "contents", "admin": true,
+    "paths": ["%WINDIR%\\Minidump", "%WINDIR%\\LiveKernelReports"],
+    "explanation": "Saved after blue screens and driver hangs. Only useful if you are troubleshooting those right now."
+  },
+  {
+    "id": "memory-dump",
+    "title": "Full memory dump",
+    "category": "Junk", "confidence": "Safe", "mode": "folder", "admin": true,
+    "paths": ["%WINDIR%\\MEMORY.DMP"],
+    "explanation": "Written after a blue screen. Often several gigabytes and only useful for debugging that crash."
+  },
+  {
+    "id": "error-reports",
+    "title": "Windows error reports",
+    "category": "Junk", "confidence": "Safe", "mode": "contents",
+    "paths": ["%LOCALAPPDATA%\\Microsoft\\Windows\\WER", "%PROGRAMDATA%\\Microsoft\\Windows\\WER"],
+    "explanation": "Problem reports that Windows already sent (or gave up sending) to Microsoft."
+  },
+  {
+    "id": "windows-update-cache",
+    "title": "Windows Update download cache",
+    "category": "Junk", "confidence": "Review", "mode": "contents", "admin": true,
+    "paths": ["%WINDIR%\\SoftwareDistribution\\Download"],
+    "explanation": "Update files that have already been installed. Don't clean it while an update is installing; Windows re-downloads anything it still needs."
+  },
+  {
+    "id": "internet-cache",
+    "title": "Internet cache (Windows)",
+    "category": "Junk", "confidence": "Safe", "mode": "contents",
+    "paths": ["%LOCALAPPDATA%\\Microsoft\\Windows\\INetCache"],
+    "explanation": "Web content cached by Windows components and older apps."
+  },
+  {
+    "id": "browser-cache",
+    "title": "Browser cache",
+    "category": "Junk", "confidence": "Safe", "mode": "contents",
+    "paths": [
+      "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Cache", "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Code Cache",
+      "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Cache", "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Code Cache",
+      "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\Cache", "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\Code Cache",
+      "%LOCALAPPDATA%\\Mozilla\\Firefox\\Profiles\\*\\cache2",
+      "%LOCALAPPDATA%\\Opera Software\\Opera GX Stable\\Cache", "%LOCALAPPDATA%\\Opera Software\\Opera Stable\\Cache"
+    ],
+    "explanation": "Copies of websites the browser keeps to load pages faster. Logins, history and bookmarks are not touched. Close the browser first for the best result."
+  },
+  {
+    "id": "app-cache",
+    "title": "App cache",
+    "category": "Junk", "confidence": "Safe", "mode": "contents",
+    "paths": [
+      "%APPDATA%\\discord\\Cache", "%APPDATA%\\discord\\Code Cache", "%APPDATA%\\discord\\GPUCache",
+      "%LOCALAPPDATA%\\Spotify\\Storage", "%LOCALAPPDATA%\\Packages\\SpotifyAB.SpotifyMusic_zpdnekdrzrea0\\LocalCache\\Spotify\\Data",
+      "%APPDATA%\\Microsoft\\Teams\\Cache", "%APPDATA%\\Slack\\Cache", "%APPDATA%\\Code\\Cache", "%APPDATA%\\Code\\CachedData"
+    ],
+    "explanation": "Downloaded images, songs and web content an app keeps for speed. The app downloads what it needs again."
+  },
+  {
+    "id": "epic-launcher-cache",
+    "title": "Epic Games Launcher cache",
+    "category": "Junk", "confidence": "Safe", "mode": "folder",
+    "paths": ["%PROGRAMDATA%\\Epic\\EpicGamesLauncher\\VaultCache", "%LOCALAPPDATA%\\EpicGamesLauncher\\Saved\\webcache*", "%PROGRAMDATA%\\EpicInstallerTemp"],
+    "explanation": "Downloaded store content, web pages and installer leftovers of the Epic Games Launcher."
+  },
+  {
+    "id": "dev-caches",
+    "title": "Developer package cache",
+    "category": "Developer", "confidence": "Review", "mode": "folder",
+    "paths": [
+      "%LOCALAPPDATA%\\npm-cache", "%LOCALAPPDATA%\\pip\\Cache", "%LOCALAPPDATA%\\Yarn\\Cache", "%USERPROFILE%\\.nuget\\packages",
+      "%USERPROFILE%\\.gradle\\caches", "%LOCALAPPDATA%\\NuGet\\v3-cache"
+    ],
+    "explanation": "Packages downloaded by programming tools. They are fetched again on your next build or install, which takes time and internet."
+  },
+  {
+    "id": "hibernation",
+    "title": "Hibernation file",
+    "category": "WindowsManaged", "confidence": "UseWindowsTool", "mode": "advice",
+    "paths": ["%SYSTEMDRIVE%\\hiberfil.sys"],
+    "explanation": "Holds your memory while the PC hibernates; Fast Startup uses it too.",
+    "advice": "If you never use hibernation, turn it off in an administrator terminal. That removes this file and disables Fast Startup (startups get a little slower).",
+    "adviceCommand": "powercfg /h off"
+  },
+  {
+    "id": "pagefile",
+    "title": "Page file (virtual memory)",
+    "category": "WindowsManaged", "confidence": "UseWindowsTool", "mode": "advice",
+    "paths": ["%SYSTEMDRIVE%\\pagefile.sys"],
+    "explanation": "Extra memory on disk that Windows uses when RAM fills up.",
+    "advice": "Leave it to Windows unless you know you need a change: System Properties > Advanced > Performance Settings > Advanced > Virtual memory.",
+    "adviceCommand": "SystemPropertiesPerformance.exe"
+  },
+  {
+    "id": "windows-old",
+    "title": "Previous Windows installation",
+    "category": "WindowsManaged", "confidence": "UseWindowsTool", "mode": "advice",
+    "paths": ["%SYSTEMDRIVE%\\Windows.old", "%SYSTEMDRIVE%\\$Windows.~BT", "%SYSTEMDRIVE%\\$Windows.~WS"],
+    "explanation": "Kept after a Windows upgrade so you can go back. Windows removes it on its own after about 10 days.",
+    "advice": "Remove it through Settings > System > Storage > Temporary files > Previous Windows installation(s).",
+    "adviceCommand": "start ms-settings:storagesense"
+  },
+  {
+    "id": "component-store",
+    "title": "Windows component store (WinSxS)",
+    "category": "WindowsManaged", "confidence": "UseWindowsTool", "mode": "advice",
+    "paths": ["%WINDIR%\\WinSxS"],
+    "explanation": "Copies of Windows parts kept for updates and repairs. It looks bigger than it is, because many files are also counted under System32.",
+    "advice": "Let Windows clean out superseded versions with DISM in an administrator terminal.",
+    "adviceCommand": "DISM /Online /Cleanup-Image /StartComponentCleanup"
+  },
+  {
+    "id": "installer-cache",
+    "title": "Windows Installer cache",
+    "category": "WindowsManaged", "confidence": "UseWindowsTool", "mode": "advice",
+    "paths": ["%WINDIR%\\Installer"],
+    "explanation": "Patches and installers that programs need in order to update, repair or uninstall.",
+    "advice": "Don't delete these by hand: programs would become impossible to update or uninstall. Uninstalling programs you no longer use is what shrinks it."
+  },
+  {
+    "id": "restore-points",
+    "title": "System Restore points",
+    "category": "WindowsManaged", "confidence": "UseWindowsTool", "mode": "advice",
+    "paths": ["%SYSTEMDRIVE%\\System Volume Information"],
+    "explanation": "Snapshots that let you roll Windows back after a bad update or driver.",
+    "advice": "Cap or clear them in System Protection: select the drive > Configure > lower Max Usage, or Delete.",
+    "adviceCommand": "SystemPropertiesProtection.exe"
+  },
+  {
+    "id": "delivery-optimization",
+    "title": "Delivery Optimization files",
+    "category": "WindowsManaged", "confidence": "UseWindowsTool", "mode": "advice", "admin": true,
+    "paths": ["%WINDIR%\\ServiceProfiles\\NetworkService\\AppData\\Local\\Microsoft\\Windows\\DeliveryOptimization\\Cache"],
+    "explanation": "Update pieces Windows shares with other PCs.",
+    "advice": "Clear them in Settings > System > Storage > Temporary files > Delivery Optimization Files.",
+    "adviceCommand": "start ms-settings:storagesense"
+  }
+]
