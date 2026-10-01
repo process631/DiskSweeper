@@ -49,6 +49,7 @@ public sealed class BiggestFilesViewModel : ObservableObject
     private string _kind = AnyKind;
     private string _search = "";
     private string _summary = "";
+    private FileRowViewModel? _selectedRow;
 
     public BiggestFilesViewModel(SelectionViewModel selection)
     {
@@ -112,6 +113,12 @@ public sealed class BiggestFilesViewModel : ObservableObject
         private set => Set(ref _summary, value);
     }
 
+    public FileRowViewModel? SelectedRow
+    {
+        get => _selectedRow;
+        set => Set(ref _selectedRow, value);
+    }
+
     public void Load(ScanResult scan)
     {
         _scan = scan;
@@ -147,7 +154,7 @@ public sealed class BiggestFilesViewModel : ObservableObject
         Rows.ReplaceAll(files.Select(f => new FileRowViewModel(f, _selection)));
         Summary = files.Count == 0
             ? "No files match these filters."
-            : $"Showing the {files.Count:N0} biggest matching files ({ByteSize.Format(files.Sum(f => f.Size))}). Click a column header to sort.";
+            : $"{files.Count:N0} files · {ByteSize.Format(files.Sum(f => f.Size))}";
     }
 }
 

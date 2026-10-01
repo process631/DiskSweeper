@@ -6,28 +6,34 @@ leftover game files and folders that refuse to be deleted the normal way.
 ## Run it
 
 - **App:** double-click `publish\DiskSweeper.exe`, or `dotnet run --project src/DiskSweeper.App`.
-  Use **Run as administrator** (button in the top-right) for fast scans and protected folders.
+  Use **Run as administrator** (bottom of the sidebar) for fast scans and protected folders.
 - **Command line:** `publish\dsweep.exe` (see [Command line](#command-line)).
 
 Needs Windows 10/11 and the .NET 9 Desktop Runtime.
 
 ## What's in the app
 
-| Tab | What it shows |
-|---|---|
-| Folders | The whole drive as a tree, biggest first, with size, share of its folder, file count and last change. Click a column header to sort. |
-| Biggest files | The 1,000 largest files, filterable by size, age, type and name/extension. |
-| File types | Space per kind (video, disk images, game data…) and per extension. Double-click an extension to list those files. |
-| Treemap | Every file as a block sized by disk use, colored by type. Double-click to zoom in, right-click for options. |
-| Smart finds | Junk and leftovers worth cleaning, each with how much it frees and why it's considered safe. |
-| Changes | What grew or shrank since an earlier scan (scans are saved automatically). |
-| Log | Every delete attempt ever made, also saved as a CSV file. |
+A Windows 11–style app (follows your light/dark theme and accent color) with a sidebar:
 
-Tick items in any tab; the bar at the bottom shows the total, then **Delete selected…**.
+| Page | What it shows |
+|---|---|
+| Overview | Drive usage, how much Cleanup can free (with a one-click **Clean safe items…**), what kinds of files fill the drive, and the largest folders and files. |
+| Folders | The whole drive as a tree, biggest first, with size, share of its folder, file count and last change. Click a column header to sort (↓/↑ shows the order). |
+| Largest files | The 1,000 largest files, filterable by name or extension, size, age and type. |
+| Treemap | Every file as a block sized by disk use, colored by type. Click for details, double-click to zoom in. |
+| File types | Space per kind (video, disk images, game data…) and per extension. Double-click an extension to list those files. |
+| Cleanup | Junk and leftovers worth cleaning, grouped by category, each with how much it frees and why it's considered safe. |
+| Changes | What grew or shrank since an earlier scan (scans are saved automatically). |
+| History | Every delete attempt ever made, also saved as a CSV file. |
+| Settings | Fast scan, remembering scans, the default delete choice, and where DiskSweeper keeps its data. |
+
+Click any file or folder to see its **details panel** (size, contents, biggest items inside, warnings, and buttons
+for Explorer, Treemap and Copy path). Tick items anywhere; a bar appears at the bottom with the total,
+**View selection**, and **Review and delete…**.
 
 ## Deleting safely
 
-- **Recycle Bin by default.** Permanent delete is a separate choice and needs an extra tick to confirm.
+- **Recycle Bin by default.** The delete dialog lets you pick Recycle Bin or permanent each time; permanent needs an extra tick to confirm.
 - **Protected places can't be ticked or deleted:** drive roots, `C:\Windows` (except its Temp and update
   cache), WindowsApps, System Volume Information, `pagefile.sys`/`hiberfil.sys`, your user folders themselves
   (their contents are fine), and anything that contains one of these.
@@ -51,7 +57,7 @@ The results window explains why and offers the fix that applies:
 
 Admin-only fixes run in a short-lived elevated copy of the app, so the main window doesn't need to restart.
 
-## Smart finds
+## Cleanup suggestions
 
 - **Junk and caches:** temp files, GPU shader caches (often many GB), crash dumps, error reports, browser and
   app caches, Windows Update cache, launcher caches, the Recycle Bin. The list lives in
@@ -65,7 +71,7 @@ Admin-only fixes run in a short-lived elevated copy of the app, so the main wind
   explained with the proper Windows tool or command instead of being deleted.
 
 Every item is marked **Safe** (can't break anything) or **Review** (very likely unneeded, look first).
-For removing programs completely (registry entries, services, scheduled tasks), the tab links to
+For removing programs completely (registry entries, services, scheduled tasks), the Cleanup page links to
 [Bulk Crap Uninstaller](https://github.com/Klocman/Bulk-Crap-Uninstaller), a free open-source uninstaller.
 
 ## Scanning
@@ -84,7 +90,7 @@ For removing programs completely (registry entries, services, scheduled tasks), 
 dsweep                                 biggest folders and files on C:
 dsweep D:\ --depth 3 --files 20        another drive, shallower tree
 dsweep C:\ --fast --save --compare     fast scan, keep it, show what changed since last time
-dsweep finds                           list Smart finds
+dsweep finds                           list cleanup suggestions
 dsweep --help                          all options
 ```
 
@@ -116,7 +122,7 @@ ownership). From a normal terminal they're reported as skipped.
 
 ## Good to know
 
-- Recycled items still use space until the Recycle Bin is emptied (Smart finds lists the bin).
+- Recycled items still use space until the Recycle Bin is emptied (Cleanup lists the bin).
 - A scan of 1.5 million files uses about 500 MB of memory while the app is open.
 - App data (log, settings, the last five scans per drive) is in `%LOCALAPPDATA%\DiskSweeper`.
 - "Delete on next restart" hasn't been exercised on a real reboot during development. It uses the standard

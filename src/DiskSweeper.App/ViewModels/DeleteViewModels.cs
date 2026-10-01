@@ -25,8 +25,6 @@ public sealed class DeletePlanItem
 
     public bool HasWarnings => Warnings.Count > 0;
 
-    public string WarningText => string.Join("\n", Warnings.Select(w => "⚠ " + w));
-
     public string? Refusal { get; init; }
 
     public bool IsRefused => Refusal is not null;
@@ -36,6 +34,11 @@ public sealed class DeletePlanItem
     public Finding? Finding { get; init; }
 
     public bool EmptiesRecycleBin { get; init; }
+
+    /// <summary>The Recycle Bin can't take this (path too long or a name ending in a dot or space).</summary>
+    public bool CantRecycle { get; init; }
+
+    public string Glyph => Finding is not null ? Icons.Broom : Node?.IsDirectory == true ? Icons.Folder : Icons.File;
 }
 
 public sealed class DeletePlan
@@ -53,23 +56,94 @@ public sealed class DeletePlan
     public bool HasRefused => Refused.Count > 0;
 
     public long TotalSize => ToDelete.Sum(i => i.Size);
+}
 
-    public string Heading => DryRun
-        ? $"Dry run: check what would be deleted ({ToDelete.Count:N0} items, {ByteSize.Format(TotalSize)})"
-        : $"Delete {ToDelete.Count:N0} item{(ToDelete.Count == 1 ? "" : "s")} ({ByteSize.Format(TotalSize)})?";
+/// <summary>
+/// The confirmation dialog: shows exactly what will go, lets you choose Recycle Bin or permanent (and a dry
+/// run), and asks for one extra tick before big or permanent deletes.
+/// </summary>
+public sealed class ConfirmDeleteViewModel(DeletePlan plan) : ObservableObject
+{
+    private DeleteMethod _method = plan.Method;
+    private bool _dryRun = plan.DryRun;
+    private bool _extraConfirmed;
 
-    public string MethodText => DryRun
-        ? "Nothing will be deleted. You'll see what would happen, and it's written to the log."
-        : Method == DeleteMethod.RecycleBin
-            ? "Items go to the Recycle Bin, so you can restore them. The space is freed when you empty the bin."
-            : "Items are deleted permanently. This can't be undone.";
+    public IReadOnlyList<DeletePlanItem> Items { get; } = plan.ToDelete;
 
-    /// <summary>Big or permanent deletes need one extra tick in the dialog.</summary>
-    public bool NeedsExtraConfirmation => !DryRun && (Method == DeleteMethod.Permanent || TotalSize >= 10L << 30);
+    public IReadOnlyList<DeletePlanItem> Refused { get; } = plan.Refused;
 
-    public string ExtraConfirmationText => Method == DeleteMethod.Permanent
-        ? $"I understand these {ByteSize.Format(TotalSize)} are gone for good."
-        : $"Yes, move {ByteSize.Format(TotalSize)} to the Recycle Bin.";
+    public bool HasRefused => Refused.Count > 0;
+
+    public long TotalSize => Items.Sum(i => i.Size);
+
+    public string TotalText => ByteSize.Format(TotalSize);
+
+    public string CountText => $"{Items.Count:N0} item{(Items.Count == 1 ? "" : "s")}";
+
+    public string Title => _dryRun ? "Preview this cleanup" : "Delete the selected items?";
+
+    public bool UseRecycleBin
+    {
+        get => _method == DeleteMethod.RecycleBin;
+        set
+        {
+            if (value) SetMethod(DeleteMethod.RecycleBin);
+        }
+    }
+
+    public bool UsePermanent
+    {
+        get => _method == DeleteMethod.Permanent;
+        set
+        {
+            if (value) SetMethod(DeleteMethod.Permanent);
+        }
+    }
+
+    public bool DryRun
+    {
+        get => _dryRun;
+        set
+        {
+            if (!Set(ref _dryRun, value)) return;
+            _extraConfirmed = false;
+            RaiseAll();
+        }
+    }
+
+    public bool NeedsExtraConfirmation => !_dryRun && (_method == DeleteMethod.Permanent || TotalSize >= 10L << 30);
+
+    public string ExtraConfirmationText => _method == DeleteMethod.Permanent
+        ? $"I understand that {TotalText} will be deleted permanently and can't be restored."
+        : $"Yes, move {TotalText} to the Recycle Bin.";
+
+    public bool ExtraConfirmed
+    {
+        get => _extraConfirmed;
+        set
+        {
+            if (Set(ref _extraConfirmed, value)) Raise(nameof(CanConfirm));
+        }
+    }
+
+    public bool CanConfirm => !NeedsExtraConfirmation || _extraConfirmed;
+
+    public string ConfirmText => _dryRun ? "Run preview" : _method == DeleteMethod.RecycleBin ? "Move to Recycle Bin" : "Delete permanently";
+
+    public bool ShowCantRecycleWarning => !_dryRun && _method == DeleteMethod.RecycleBin && Items.Any(i => i.CantRecycle);
+
+    public string CantRecycleText =>
+        $"{Items.Count(i => i.CantRecycle):N0} item(s) have paths the Recycle Bin can't hold. They'll be listed afterwards with a button to delete them permanently.";
+
+    public DeletePlan ToPlan() => new() { Items = plan.Items, Method = _method, DryRun = _dryRun };
+
+    private void SetMethod(DeleteMethod method)
+    {
+        if (_method == method) return;
+        _method = method;
+        _extraConfirmed = false;
+        RaiseAll();
+    }
 }
 
 /// <summary>One line of the results window, with the fixes that apply to whatever went wrong.</summary>
@@ -96,9 +170,9 @@ public sealed class DeleteResultRow : ObservableObject
 
     public long Bytes => _results.Sum(r => r.Bytes);
 
-    public string Icon => _results.Count == 0 ? ""
-        : AllSucceeded ? (_results.Any(r => r.Outcome == DeleteOutcome.ScheduledForRestart) ? "" : "")
-        : _results.Any(r => r.Succeeded || r.Bytes > 0) ? "" : "";
+    public string Icon => _results.Count == 0 ? Icons.Info
+        : AllSucceeded ? (_results.Any(r => r.Outcome == DeleteOutcome.ScheduledForRestart) ? Icons.Clock : Icons.Check)
+        : _results.Any(r => r.Succeeded || r.Bytes > 0) ? Icons.Warning : Icons.Cancel;
 
     public string StatusText
     {
@@ -168,19 +242,16 @@ public sealed class DeleteCoordinator(DeleteService service)
                 continue;
             }
 
-            var warnings = PathWarnings.For(item.Path).ToList();
-            if (method == DeleteMethod.RecycleBin && !RecycleBin.CanTake(item.Path))
-                warnings.Add("Too long or oddly named for the Recycle Bin: it will fail there. Use “Delete permanently” for this one.");
-
             planItems.Add(new DeletePlanItem
             {
                 Title = item.Title,
                 Path = item.Path,
                 Paths = [item.Path],
                 Size = item.Size,
-                Warnings = warnings,
+                Warnings = PathWarnings.For(item.Path),
                 Refusal = ProtectedPaths.WhyProtected(item.Path),
                 Node = item.Node,
+                CantRecycle = !RecycleBin.CanTake(item.Path),
             });
         }
         return new DeletePlan { Items = planItems.OrderByDescending(i => i.Size).ToList(), Method = method, DryRun = dryRun };
@@ -199,9 +270,10 @@ public sealed class DeleteCoordinator(DeleteService service)
 
         var paths = finding.ItemsToDelete().Where(p => ProtectedPaths.WhyProtected(p) is null).ToList();
         var warnings = new List<string>();
-        if (finding.Confidence == Confidence.Review) warnings.Add("Marked “Review”: " + finding.Explanation);
+        if (finding.Confidence == Confidence.Review) warnings.Add("Marked Review: " + finding.Explanation);
         if (finding.MayContainSaves) warnings.Add("May contain game saves.");
-        warnings.AddRange(PathWarnings.For(finding.Path).Where(w => !w.Contains("game saves")));
+        bool appFolder = finding.Category is FindCategory.ProgramLeftover or FindCategory.GameSaves;
+        warnings.AddRange(PathWarnings.For(finding.Path).Where(w => !w.Contains("game saves") && (appFolder || !w.Contains("settings folder"))));
 
         return new DeletePlanItem
         {
@@ -210,8 +282,9 @@ public sealed class DeleteCoordinator(DeleteService service)
             Paths = paths,
             Size = finding.Size,
             Warnings = warnings.Distinct().ToList(),
-            Refusal = finding.Action == FindingAction.AdviceOnly ? "Windows manages this; use the advice shown in Smart finds." : null,
+            Refusal = finding.Action == FindingAction.AdviceOnly ? "Windows manages this; use the advice shown in Cleanup." : null,
             Finding = finding,
+            CantRecycle = paths.Any(path => !RecycleBin.CanTake(path)),
         };
     }
 
@@ -314,6 +387,29 @@ public sealed class DeleteResultsViewModel : ObservableObject
         private set => Set(ref _isBusy, value);
     }
 
+    public bool AllGood => Rows.All(r => r.AllSucceeded);
+
+    public string HeadlineGlyph => AllGood ? Icons.Check : Icons.Warning;
+
+    public string Headline
+    {
+        get
+        {
+            long bytes = Rows.Sum(r => r.Bytes);
+            int failed = Rows.Count(r => !r.AllSucceeded);
+            if (DryRun) return $"Preview: {ByteSize.Format(bytes)} would be freed";
+            if (failed > 0) return failed == 1 ? "1 item needs your attention" : $"{failed} items need your attention";
+            return _method == DeleteMethod.RecycleBin ? $"Moved {ByteSize.Format(bytes)} to the Recycle Bin" : $"Freed {ByteSize.Format(bytes)}";
+        }
+    }
+
+    /// <summary>The line under the headline in the results window.</summary>
+    public string Detail => DryRun
+        ? "Nothing was deleted. The preview is in the History page."
+        : Rows.All(r => r.AllSucceeded)
+            ? (_method == DeleteMethod.RecycleBin ? "Recycled items still use space until you empty the Recycle Bin." : "Everything selected was removed.")
+            : "Use the buttons next to each item to fix what couldn't be deleted.";
+
     public string Summary
     {
         get
@@ -339,6 +435,10 @@ public sealed class DeleteResultsViewModel : ObservableObject
         {
             IsBusy = false;
             Raise(nameof(Summary));
+            Raise(nameof(Headline));
+            Raise(nameof(Detail));
+            Raise(nameof(HeadlineGlyph));
+            Raise(nameof(AllGood));
         }
     });
 }

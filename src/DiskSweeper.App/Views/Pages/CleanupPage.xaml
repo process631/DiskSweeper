@@ -1,0 +1,162 @@
+<UserControl x:Class="DiskSweeper.App.Views.Pages.CleanupPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource NoScanState}"
+                        Visibility="{Binding HasScan, Converter={StaticResource InverseBoolToVisibility}}" />
+
+        <DockPanel Visibility="{Binding HasScan, Converter={StaticResource BoolToVisibility}}">
+            <!-- Totals -->
+            <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Fill="{DynamicResource SystemFillColorSuccessBrush}" Margin="0,0,8,0" />
+                            <TextBlock Text="Safe to clean" Style="{StaticResource Secondary}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding SmartFinds.SafeText}" Style="{StaticResource BigNumber}" Margin="0,6,0,0" />
+                        <TextBlock Text="Caches and leftovers that can't break anything" Style="{StaticResource Caption}" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Fill="{DynamicResource SystemFillColorCautionBrush}" Margin="0,0,8,0" />
+                            <TextBlock Text="Worth a look" Style="{StaticResource Secondary}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding SmartFinds.ReviewText}" Style="{StaticResource BigNumber}" Margin="0,6,0,0" />
+                        <TextBlock Text="Very likely unneeded; check before deleting" Style="{StaticResource Caption}" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="4" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentFillColorDefaultBrush}" Margin="0,0,8,0" />
+                            <TextBlock Text="Suggestions" Style="{StaticResource Secondary}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding SmartFinds.SuggestionCount}" Style="{StaticResource BigNumber}" Margin="0,6,0,0" />
+                        <TextBlock Text="Nothing is deleted until you choose to" Style="{StaticResource Caption}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Actions -->
+            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                <Button DockPanel.Dock="Right" Style="{StaticResource SubtleButton}" Command="{Binding SmartFinds.OpenBcuCommand}"
+                        ToolTip="Bulk Crap Uninstaller (free, open source) removes programs together with their leftovers in the registry, services and scheduled tasks.">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" FontSize="14" Text="&#xE7B8;" Margin="0,0,8,0" />
+                        <TextBlock Text="{Binding SmartFinds.BcuButtonText}" />
+                    </StackPanel>
+                </Button>
+                <StackPanel Orientation="Horizontal">
+                    <Button Style="{StaticResource PrimaryButton}" Command="{Binding CleanSafeCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" FontSize="14" Text="&#xEA99;" Margin="0,0,8,0" />
+                            <TextBlock Text="Clean safe items…" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource StandardButton}" Command="{Binding SmartFinds.SelectSafeCommand}" Content="Select all safe" Margin="8,0,0,0" />
+                    <Button Style="{StaticResource SubtleButton}" Command="{Binding FindCommand}" Margin="8,0,0,0" ToolTip="Look again">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" FontSize="14" Text="&#xE72C;" Margin="0,0,8,0" />
+                            <TextBlock Text="Refresh" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
+
+            <Grid DockPanel.Dock="Top" Margin="2,0,0,10">
+                <TextBlock Text="{Binding SmartFinds.Status}" Style="{StaticResource Secondary}" TextWrapping="Wrap" />
+            </Grid>
+            <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Margin="0,0,0,10"
+                         Visibility="{Binding SmartFinds.IsBusy, Converter={StaticResource BoolToVisibility}}" />
+
+            <!-- Suggestions -->
+            <Border Style="{StaticResource Card}" Padding="4">
+                <ListView ItemsSource="{Binding SmartFinds.View}" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch"
+                          VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.ScrollUnit="Pixel"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListView.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="14,16,20,6">
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding Items, Converter={StaticResource GroupTotal}}" Style="{StaticResource Secondary}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Name}" Style="{StaticResource SectionTitle}" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ListView.GroupStyle>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="10,10" />
+                            <Setter Property="Margin" Value="4,1" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="36" />
+                                    <ColumnDefinition Width="48" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="84" />
+                                </Grid.ColumnDefinitions>
+                                <CheckBox IsChecked="{Binding IsChecked}" VerticalAlignment="Top" Margin="0,8,0,0" MinWidth="0"
+                                          Visibility="{Binding CanSelect, Converter={StaticResource BoolToVisibility}}" />
+                                <Border Grid.Column="1" Style="{StaticResource IconTile}" VerticalAlignment="Top">
+                                    <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" HorizontalAlignment="Center" />
+                                </Border>
+                                <StackPanel Grid.Column="2" Margin="0,0,16,0">
+                                    <TextBlock Text="{Binding Title}" Style="{StaticResource Strong}" />
+                                    <TextBlock Text="{Binding Path}" Style="{StaticResource Caption}" Margin="0,1,0,0" />
+                                    <TextBlock Text="{Binding Explanation}" Style="{StaticResource Secondary}" TextWrapping="Wrap" TextTrimming="None" Margin="0,6,0,0" />
+                                    <TextBlock Text="{Binding Tags}" Style="{StaticResource Caption}" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,4,0,0"
+                                               Visibility="{Binding HasTags, Converter={StaticResource BoolToVisibility}}" />
+                                    <Border Style="{StaticResource NoticeBar}" Margin="0,10,0,0" Padding="12,10"
+                                            Visibility="{Binding HasAdvice, Converter={StaticResource BoolToVisibility}}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Advice}" TextWrapping="Wrap" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding HasCommand, Converter={StaticResource BoolToVisibility}}">
+                                                <TextBox Text="{Binding CommandText, Mode=OneWay}" IsReadOnly="True" FontFamily="Cascadia Mono, Consolas" MinWidth="240" />
+                                                <Button Style="{StaticResource StandardButton}" Content="Copy" Margin="8,0,0,0"
+                                                        Command="{Binding DataContext.SmartFinds.CopyCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                        CommandParameter="{Binding CommandText}" />
+                                                <Button Style="{StaticResource StandardButton}" Content="Open…" Margin="8,0,0,0"
+                                                        Command="{Binding DataContext.SmartFinds.RunAdviceCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                        CommandParameter="{Binding CommandText}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Grid.Column="3" Text="{Binding SizeText}" FontWeight="SemiBold" FontSize="15" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,16,0" />
+                                <Border Grid.Column="4" Style="{StaticResource BadgeBorder}" Margin="0,2,0,0">
+                                    <TextBlock Text="{Binding Badge}" Style="{StaticResource BadgeText}" />
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                    <ListView.ContextMenu>
+                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                            <MenuItem Header="Open in File Explorer" Command="{Binding ShowInExplorerCommand}"
+                                      CommandParameter="{Binding PlacementTarget.SelectedItem, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                            <MenuItem Header="Copy path" Command="{Binding CopyPathCommand}"
+                                      CommandParameter="{Binding PlacementTarget.SelectedItem, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                        </ContextMenu>
+                    </ListView.ContextMenu>
+                </ListView>
+            </Border>
+        </DockPanel>
+    </Grid>
+</UserControl>

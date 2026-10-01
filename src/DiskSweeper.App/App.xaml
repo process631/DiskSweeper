@@ -8,55 +8,446 @@
         <ResourceDictionary>
             <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
             <views:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
-            <views:BadgeBrushConverter x:Key="BadgeBrush" />
             <views:KindBrushConverter x:Key="KindBrush" />
+            <views:GroupTotalConverter x:Key="GroupTotal" />
+            <views:OneMinusConverter x:Key="OneMinus" />
 
             <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+            <FontFamily x:Key="UiFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+            <FontFamily x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
 
-            <Style x:Key="Icon" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
-                <Setter Property="FontSize" Value="14" />
-                <Setter Property="VerticalAlignment" Value="Center" />
+            <!-- Text -->
+            <Style x:Key="PageTitle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+                <Setter Property="FontSize" Value="28" />
+                <Setter Property="FontWeight" Value="SemiBold" />
             </Style>
-
+            <Style x:Key="SectionTitle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
+            <Style x:Key="Strong" TargetType="TextBlock">
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
             <Style x:Key="Secondary" TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             </Style>
-
-            <Style x:Key="Card" TargetType="Border">
-                <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="6" />
-                <Setter Property="Padding" Value="12,8" />
+            <Style x:Key="Caption" TargetType="TextBlock" BasedOn="{StaticResource Secondary}">
+                <Setter Property="FontSize" Value="12" />
             </Style>
-
-            <Style x:Key="Badge" TargetType="Border">
-                <Setter Property="CornerRadius" Value="4" />
-                <Setter Property="Padding" Value="6,1" />
-                <Setter Property="VerticalAlignment" Value="Top" />
-                <Setter Property="HorizontalAlignment" Value="Left" />
+            <Style x:Key="BigNumber" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+                <Setter Property="FontSize" Value="30" />
+                <Setter Property="FontWeight" Value="SemiBold" />
             </Style>
-
+            <Style x:Key="Icon" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
             <Style x:Key="CellText" TargetType="TextBlock">
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             </Style>
+            <Style x:Key="NumberCell" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
+                <Setter Property="HorizontalAlignment" Value="Right" />
+                <Setter Property="Margin" Value="0,0,12,0" />
+                <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
+            </Style>
+            <Style x:Key="Warning" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
 
-            <!-- The accent button, but with readable text while it's disabled. -->
+            <!-- Surfaces -->
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Padding" Value="20,16" />
+            </Style>
+            <Style x:Key="IconTile" TargetType="Border">
+                <Setter Property="Width" Value="36" />
+                <Setter Property="Height" Value="36" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+            </Style>
+
+            <!-- A notice bar, like Windows' InfoBar. Tag="Error" turns it red. -->
+            <Style x:Key="NoticeBar" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource SystemFillColorAttentionBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="Padding" Value="14,10" />
+                <Style.Triggers>
+                    <Trigger Property="Tag" Value="Error">
+                        <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBackgroundBrush}" />
+                    </Trigger>
+                    <Trigger Property="Tag" Value="Caution">
+                        <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBackgroundBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- Buttons -->
             <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+                <Setter Property="Padding" Value="16,7" />
                 <Style.Triggers>
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Foreground" Value="{DynamicResource TextFillColorDisabledBrush}" />
                     </Trigger>
                 </Style.Triggers>
             </Style>
-
-            <Style x:Key="Warning" TargetType="TextBlock">
-                <Setter Property="Foreground" Value="#C27C0E" />
-                <Setter Property="TextWrapping" Value="Wrap" />
+            <Style x:Key="StandardButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                <Setter Property="Padding" Value="14,7" />
             </Style>
+
+            <!-- Borderless button for toolbars and lists; shows a soft background on hover. -->
+            <Style x:Key="SubtleButton" TargetType="Button">
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Padding" Value="10,6" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorDisabledBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="LinkButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}">
+                <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                <Setter Property="Padding" Value="6,3" />
+            </Style>
+
+            <!-- Clickable list row (Overview lists, details panel). -->
+            <Style x:Key="RowButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}">
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="Padding" Value="8,6" />
+            </Style>
+
+            <!-- Sidebar entry: soft highlight, accent pill on the left when selected (like Windows Settings). -->
+            <Style x:Key="NavItem" TargetType="ListBoxItem">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <Border x:Name="Bg" Margin="0,1" Height="38" CornerRadius="5" Background="Transparent">
+                                <Grid>
+                                    <Border x:Name="Pill" Width="3" Height="16" CornerRadius="1.5" HorizontalAlignment="Left"
+                                            Background="{DynamicResource AccentFillColorDefaultBrush}" Visibility="Collapsed" />
+                                    <ContentPresenter Margin="14,0,10,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                    <Setter TargetName="Pill" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="NavToggle" TargetType="ToggleButton">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border x:Name="Bg" Margin="0,1" Height="38" CornerRadius="5" Background="Transparent">
+                                <Grid>
+                                    <Border x:Name="Pill" Width="3" Height="16" CornerRadius="1.5" HorizontalAlignment="Left"
+                                            Background="{DynamicResource AccentFillColorDefaultBrush}" Visibility="Collapsed" />
+                                    <ContentPresenter Margin="14,0,10,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                    <Setter TargetName="Pill" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Big selectable option card (used for Recycle Bin / permanent in the delete dialog). -->
+            <Style x:Key="OptionCard" TargetType="RadioButton">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="Box" CornerRadius="8" BorderThickness="1" Padding="14,12"
+                                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                                <ContentPresenter />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Box" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                    <Setter TargetName="Box" Property="BorderThickness" Value="2" />
+                                    <Setter TargetName="Box" Property="Padding" Value="13,11" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Confidence badge: Safe (green), Review (amber), Windows (blue). -->
+            <Style x:Key="BadgeBorder" TargetType="Border">
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="Padding" Value="9,2" />
+                <Setter Property="HorizontalAlignment" Value="Right" />
+                <Setter Property="VerticalAlignment" Value="Top" />
+                <Setter Property="Background" Value="{DynamicResource SystemFillColorAttentionBackgroundBrush}" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Badge}" Value="Safe">
+                        <Setter Property="Background" Value="{DynamicResource SystemFillColorSuccessBackgroundBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Badge}" Value="Review">
+                        <Setter Property="Background" Value="{DynamicResource SystemFillColorCautionBackgroundBrush}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="BadgeText" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="{DynamicResource SystemFillColorAttentionBrush}" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Badge}" Value="Safe">
+                        <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Badge}" Value="Review">
+                        <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- Lists -->
+            <Style x:Key="AppGrid" TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
+                <Setter Property="AutoGenerateColumns" Value="False" />
+                <Setter Property="CanUserAddRows" Value="False" />
+                <Setter Property="CanUserDeleteRows" Value="False" />
+                <Setter Property="CanUserResizeRows" Value="False" />
+                <Setter Property="IsReadOnly" Value="True" />
+                <Setter Property="HeadersVisibility" Value="Column" />
+                <Setter Property="GridLinesVisibility" Value="None" />
+                <Setter Property="SelectionMode" Value="Single" />
+                <Setter Property="RowHeight" Value="38" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="EnableRowVirtualization" Value="True" />
+            </Style>
+            <Style x:Key="ThinProgress" TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
+                <Setter Property="Height" Value="4" />
+                <Setter Property="MinHeight" Value="4" />
+            </Style>
+
+
+            <!--
+                Right-click menu for files and folders. Its DataContext is the main view model (passed through the
+                row's Tag); CommandParameter is the row it was opened on.
+            -->
+            <ContextMenu x:Key="NodeMenu" x:Shared="False" DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                <MenuItem Header="Select or unselect for cleanup" Command="{Binding ToggleSelectCommand}"
+                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE73E;" /></MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="Open in File Explorer" Command="{Binding ShowInExplorerCommand}"
+                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE838;" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Show in Folders" Command="{Binding ShowInFoldersCommand}"
+                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE8B7;" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Show in Treemap" Command="{Binding ShowInTreemapCommand}"
+                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xECA5;" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Copy path" Command="{Binding CopyPathCommand}"
+                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;" /></MenuItem.Icon>
+                </MenuItem>
+            </ContextMenu>
+
+            <!-- Folder tree rows: GridView's own row style (keeps the columns) plus the menu. -->
+            <!-- Folder tree rows: GridView's row presenter in a template that follows the light/dark theme. -->
+            <Style x:Key="TreeRowStyle" TargetType="ListViewItem">
+                <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}" />
+                <Setter Property="ContextMenu" Value="{StaticResource NodeMenu}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListViewItem">
+                            <Border x:Name="Bg" Background="Transparent" CornerRadius="4" Margin="2,1" MinHeight="36">
+                                <Grid>
+                                    <Border x:Name="Pill" Width="3" Height="16" CornerRadius="1.5" HorizontalAlignment="Left"
+                                            Background="{DynamicResource AccentFillColorDefaultBrush}" Visibility="Collapsed" />
+                                    <GridViewRowPresenter Columns="{TemplateBinding GridView.ColumnCollection}" Content="{TemplateBinding Content}" VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                    <Setter TargetName="Pill" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Folder tree column headers: click to sort, drag the edge to resize. -->
+            <Style x:Key="ColumnHeader" TargetType="GridViewColumnHeader">
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="GridViewColumnHeader">
+                            <Grid>
+                                <Border x:Name="Bg" Background="Transparent" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" Padding="10,9">
+                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
+                                </Border>
+                                <Thumb x:Name="PART_HeaderGripper" HorizontalAlignment="Right" Width="8" Margin="0,0,-4,0" Cursor="SizeWE">
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Border Background="Transparent" />
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="Role" Value="Padding">
+                                    <Setter Property="Cursor" Value="Arrow" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Right-click menu for data grids: acts on the grid's selected row (right-click selects it). -->
+            <ContextMenu x:Key="GridNodeMenu" x:Shared="False" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                <MenuItem Header="Select or unselect for cleanup" Command="{Binding ToggleSelectCommand}"
+                          CommandParameter="{Binding PlacementTarget.SelectedItem, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE73E;" /></MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="Open in File Explorer" Command="{Binding ShowInExplorerCommand}"
+                          CommandParameter="{Binding PlacementTarget.SelectedItem, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE838;" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Show in Folders" Command="{Binding ShowInFoldersCommand}"
+                          CommandParameter="{Binding PlacementTarget.SelectedItem, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE8B7;" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Show in Treemap" Command="{Binding ShowInTreemapCommand}"
+                          CommandParameter="{Binding PlacementTarget.SelectedItem, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xECA5;" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Copy path" Command="{Binding CopyPathCommand}"
+                          CommandParameter="{Binding PlacementTarget.SelectedItem, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;" /></MenuItem.Icon>
+                </MenuItem>
+            </ContextMenu>
+
+            <!-- Share bar that stretches to its column: accent part for the share, track for the rest. Bind DataContext's Weight (0..1). -->
+            <DataTemplate x:Key="ShareBar">
+                <Border Height="6" CornerRadius="3" Background="{DynamicResource ControlFillColorSecondaryBrush}" VerticalAlignment="Center" ClipToBounds="True">
+                    <views:ProportionalPanel>
+                        <Border CornerRadius="3" Background="{DynamicResource AccentFillColorDefaultBrush}" views:ProportionalPanel.Weight="{Binding Weight}" />
+                        <Border views:ProportionalPanel.Weight="{Binding Weight, Converter={StaticResource OneMinus}}" />
+                    </views:ProportionalPanel>
+                </Border>
+            </DataTemplate>
+
+            <!-- What a scan-based page shows before the first scan. DataContext: the main view model. -->
+            <DataTemplate x:Key="NoScanState">
+                <Grid>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="420" Margin="0,40">
+                        <Border Width="64" Height="64" CornerRadius="16" Background="{DynamicResource SubtleFillColorSecondaryBrush}" HorizontalAlignment="Center">
+                            <TextBlock Style="{StaticResource Icon}" FontSize="30" Text="&#xEDA2;" HorizontalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="No scan yet" Style="{StaticResource SectionTitle}" FontSize="20" HorizontalAlignment="Center" Margin="0,16,0,6" />
+                        <TextBlock Text="Choose a drive at the top right and press Scan. It only reads your files; nothing is deleted until you choose to."
+                                   Style="{StaticResource Secondary}" TextWrapping="Wrap" TextAlignment="Center" />
+                        <Button Command="{Binding ScanCommand}" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Center" Margin="0,18,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" FontSize="14" Text="&#xE721;" Margin="0,0,8,0" />
+                                <TextBlock Text="Scan now" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </DataTemplate>
+
+            <!-- Clickable line used in Overview and the details panel: icon, name (+ detail), size, share bar. DataContext: TopEntry. -->
+            <DataTemplate x:Key="TopEntryRow">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="28" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="80" />
+                        <ColumnDefinition Width="90" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
+                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="{Binding SizeText}" FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <ContentPresenter Grid.Column="3" Content="{Binding}" ContentTemplate="{StaticResource ShareBar}" VerticalAlignment="Center" />
+                </Grid>
+            </DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

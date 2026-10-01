@@ -54,7 +54,11 @@ public sealed class TreemapView : FrameworkElement
     private Size _laidOutFor;
     private TreemapRect? _hovered;
 
+    /// <summary>Double-click: zoom into this folder.</summary>
     public event EventHandler<FileNode>? NodeActivated;
+
+    /// <summary>Single click: show this block's details.</summary>
+    public event EventHandler<FileNode>? NodeClicked;
 
     public FileNode? Root
     {
@@ -166,6 +170,7 @@ public sealed class TreemapView : FrameworkElement
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         base.OnMouseLeftButtonDown(e);
+        if (e.ClickCount == 1 && _hovered is TreemapRect clicked) NodeClicked?.Invoke(this, clicked.Node);
         if (e.ClickCount == 2 && _hovered is TreemapRect hit)
         {
             // Double-clicking a file zooms into the folder it's in.

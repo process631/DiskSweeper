@@ -32,7 +32,7 @@ public static class Shell
     public static void OpenUrl(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
 
     /// <summary>
-    /// Opens a command the user chose to run from a Smart finds advice (e.g. a Settings page or
+    /// Opens a command the user chose to run from a Cleanup advice (e.g. a Settings page or
     /// System Properties). Commands that need a terminal open in an administrator PowerShell window.
     /// </summary>
     public static void RunAdvice(string command)

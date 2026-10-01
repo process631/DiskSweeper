@@ -1,0 +1,116 @@
+<UserControl x:Class="DiskSweeper.App.Views.DetailsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="320">
+    <Border Style="{StaticResource Card}" Padding="0">
+        <Grid>
+            <!-- Nothing picked yet -->
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
+                        Visibility="{Binding Details.HasNode, Converter={StaticResource InverseBoolToVisibility}}">
+                <TextBlock Style="{StaticResource Icon}" FontSize="28" Text="&#xE946;" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                <TextBlock Text="Click a file or folder to see its details here." Style="{StaticResource Secondary}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,10,0,0" />
+            </StackPanel>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Visibility="{Binding Details.HasNode, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Margin="20,18,20,18">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Style="{StaticResource IconTile}" Width="44" Height="44">
+                            <TextBlock Style="{StaticResource Icon}" FontSize="20" Text="{Binding Details.Glyph}" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                        </Border>
+                        <StackPanel Margin="12,0,0,0" VerticalAlignment="Center" Width="220">
+                            <TextBlock Text="{Binding Details.Name}" Style="{StaticResource SectionTitle}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Details.Name}" />
+                            <TextBlock Text="{Binding Details.KindText}" Style="{StaticResource Caption}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding Details.SizeText}" Style="{StaticResource BigNumber}" Margin="0,18,0,0" />
+                    <TextBlock Text="{Binding Details.ContentsText}" Style="{StaticResource Secondary}"
+                               Visibility="{Binding Details.HasContents, Converter={StaticResource BoolToVisibility}}" />
+                    <ProgressBar Value="{Binding Details.SharePercent, Mode=OneWay}" Maximum="100" Margin="0,12,0,6" />
+                    <TextBlock Text="{Binding Details.ShareText}" Style="{StaticResource Caption}" />
+                    <TextBlock Text="{Binding Details.ModifiedText}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+
+                    <TextBlock Text="Location" Style="{StaticResource Caption}" Margin="0,16,0,2" />
+                    <TextBlock Text="{Binding Details.FullPath}" TextWrapping="Wrap" />
+
+                    <!-- Protected -->
+                    <Border Style="{StaticResource NoticeBar}" Tag="Caution" Margin="0,16,0,0"
+                            Visibility="{Binding Details.IsProtected, Converter={StaticResource BoolToVisibility}}">
+                        <DockPanel>
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" VerticalAlignment="Top" Margin="0,2,10,0" />
+                            <TextBlock Text="{Binding Details.ProtectedReason}" TextWrapping="Wrap" />
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Warnings -->
+                    <ItemsControl ItemsSource="{Binding Details.Warnings}" Margin="0,12,0,0"
+                                  Visibility="{Binding Details.HasWarnings, Converter={StaticResource BoolToVisibility}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,6">
+                                    <TextBlock Style="{StaticResource Icon}" FontSize="13" Text="&#xE7BA;" VerticalAlignment="Top" Margin="0,2,8,0"
+                                               Foreground="{DynamicResource SystemFillColorCautionBrush}" />
+                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" Style="{StaticResource Secondary}" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Actions -->
+                    <ToggleButton IsChecked="{Binding Details.IsSelected}" HorizontalAlignment="Stretch" Margin="0,16,0,8" Padding="12,8"
+                                  Visibility="{Binding Details.IsProtected, Converter={StaticResource InverseBoolToVisibility}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" FontSize="14" Text="&#xE73E;" Margin="0,0,8,0" />
+                            <TextBlock Text="{Binding Details.SelectText}" />
+                        </StackPanel>
+                    </ToggleButton>
+                    <UniformGrid Columns="3" Margin="0,4,0,0">
+                        <Button Style="{StaticResource SubtleButton}" Command="{Binding ShowInExplorerCommand}" CommandParameter="{Binding Details.Node}" ToolTip="Open in File Explorer">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE838;" HorizontalAlignment="Center" />
+                                <TextBlock Text="Explorer" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SubtleButton}" Command="{Binding ShowInTreemapCommand}" CommandParameter="{Binding Details.Node}" ToolTip="Show in Treemap">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xECA5;" HorizontalAlignment="Center" />
+                                <TextBlock Text="Treemap" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SubtleButton}" Command="{Binding CopyPathCommand}" CommandParameter="{Binding Details.Node}" ToolTip="Copy the full path">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;" HorizontalAlignment="Center" />
+                                <TextBlock Text="Copy path" Style="{StaticResource Caption}" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Button>
+                    </UniformGrid>
+
+                    <!-- Biggest inside -->
+                    <StackPanel Visibility="{Binding Details.HasContents, Converter={StaticResource BoolToVisibility}}" Margin="0,18,0,0">
+                        <TextBlock Text="Biggest inside" Style="{StaticResource Strong}" Margin="0,0,0,6" />
+                        <ItemsControl ItemsSource="{Binding Details.BiggestInside}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource RowButton}" Padding="4,5"
+                                            Command="{Binding DataContext.ShowInFoldersCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="24" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Style="{StaticResource Icon}" FontSize="14" Text="{Binding Glyph}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <TextBlock Grid.Column="2" Text="{Binding SizeText}" Style="{StaticResource Secondary}" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</UserControl>

@@ -6,15 +6,46 @@ using DiskSweeper.Core.Analysis;
 
 namespace DiskSweeper.App.Views;
 
-/// <summary>Binds an enum to a TabControl's SelectedIndex (enum value N ↔ tab N).</summary>
-public sealed class EnumIndexConverter : IValueConverter
+/// <summary>Visible when the bound enum value matches the converter parameter (e.g. which page is open).</summary>
+public sealed class EnumVisibilityConverter : IValueConverter
 {
-    public static readonly EnumIndexConverter Instance = new();
+    public static readonly EnumVisibilityConverter Instance = new();
 
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => System.Convert.ToInt32(value, culture);
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        string.Equals(value?.ToString(), parameter?.ToString(), StringComparison.Ordinal) ? Visibility.Visible : Visibility.Collapsed;
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
-        value is int index && index >= 0 ? Enum.ToObject(typeof(ViewModels.MainTab), index) : Binding.DoNothing;
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
+}
+
+/// <summary>Adds up the sizes of the items in a list group, for the group header ("Junk and caches · 21.3 GB").</summary>
+public sealed class GroupTotalConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is System.Collections.IEnumerable items
+            ? Core.ByteSize.Format(items.OfType<ViewModels.FindingRowViewModel>().Sum(row => row.Size))
+            : "";
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
+}
+
+/// <summary>Visible when any of the bound booleans is true (e.g. scanning or deleting).</summary>
+public sealed class AnyTrueToVisibilityConverter : IMultiValueConverter
+{
+    public static readonly AnyTrueToVisibilityConverter Instance = new();
+
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture) =>
+        values.Any(v => v is true) ? Visibility.Visible : Visibility.Collapsed;
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture) => throw new NotSupportedException();
+}
+
+/// <summary>1 − x, for the empty part of a share bar.</summary>
+public sealed class OneMinusConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is double share ? Math.Max(0, 1 - share) : 1.0;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
 }
 
 /// <summary>true → Collapsed, false → Visible.</summary>
@@ -24,30 +55,6 @@ public sealed class InverseBoolToVisibilityConverter : IValueConverter
         value is true ? Visibility.Collapsed : Visibility.Visible;
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
-}
-
-/// <summary>Maps a Smart finds confidence label to its badge color.</summary>
-public sealed class BadgeBrushConverter : IValueConverter
-{
-    private static readonly Brush Safe = Frozen(Color.FromRgb(0x2E, 0x8B, 0x57));
-    private static readonly Brush Review = Frozen(Color.FromRgb(0xC2, 0x7C, 0x0E));
-    private static readonly Brush Windows = Frozen(Color.FromRgb(0x2B, 0x6C, 0xB0));
-
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => value switch
-    {
-        "Safe" => Safe,
-        "Review" => Review,
-        _ => Windows,
-    };
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
-
-    private static Brush Frozen(Color color)
-    {
-        var brush = new SolidColorBrush(color);
-        brush.Freeze();
-        return brush;
-    }
 }
 
 /// <summary>Maps a file kind to its treemap color, so lists and the treemap legend match.</summary>

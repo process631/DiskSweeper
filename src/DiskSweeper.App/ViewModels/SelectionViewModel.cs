@@ -7,7 +7,7 @@ using DiskSweeper.Core.SmartFinds;
 
 namespace DiskSweeper.App.ViewModels;
 
-/// <summary>Something ticked for deletion: either a scanned file/folder or a Smart finds suggestion.</summary>
+/// <summary>Something ticked for deletion: either a scanned file/folder or a cleanup suggestion.</summary>
 public sealed class SelectedItem
 {
     public required string Key { get; init; }
@@ -21,6 +21,10 @@ public sealed class SelectedItem
     public FileNode? Node { get; init; }
 
     public Finding? Finding { get; init; }
+
+    public string SizeText => ByteSize.Format(Size);
+
+    public string Glyph => Finding is not null ? Icons.Broom : Node?.IsDirectory == true ? Icons.Folder : Icons.File;
 
     public static SelectedItem From(FileNode node) => new()
     {
@@ -52,21 +56,33 @@ public sealed class SelectionViewModel : ObservableObject
     public SelectionViewModel()
     {
         ClearCommand = new RelayCommand(Clear, () => _items.Count > 0);
+        RemoveCommand = new RelayCommand(p => { if (p is SelectedItem item) Set(item, false); });
     }
 
     public event EventHandler? Changed;
 
     public ICommand ClearCommand { get; }
 
+    public ICommand RemoveCommand { get; }
+
     public IReadOnlyCollection<SelectedItem> Items => _items.Values;
+
+    /// <summary>The selection as a list for the "view selection" pop-up, biggest first.</summary>
+    public BulkObservableCollection<SelectedItem> List { get; } = [];
 
     public int Count => _items.Count;
 
+    public bool HasItems => _items.Count > 0;
+
     public long TotalSize => WithoutNested().Sum(item => item.Size);
 
+    public string CountText => $"{_items.Count:N0} item{(_items.Count == 1 ? "" : "s")} selected";
+
+    public string TotalText => ByteSize.Format(TotalSize);
+
     public string Summary => _items.Count == 0
-        ? "Tick files, folders or Smart finds to select them for deleting."
-        : $"{_items.Count:N0} selected · {ByteSize.Format(TotalSize)}";
+        ? "Tick files, folders or cleanup suggestions to select them for deleting."
+        : $"{CountText} · {TotalText}";
 
     public bool Contains(string key) => _items.ContainsKey(key);
 
@@ -114,8 +130,12 @@ public sealed class SelectionViewModel : ObservableObject
 
     private void Notify()
     {
+        List.ReplaceAll(_items.Values.OrderByDescending(i => i.Size));
         Raise(nameof(Count));
+        Raise(nameof(HasItems));
         Raise(nameof(TotalSize));
+        Raise(nameof(CountText));
+        Raise(nameof(TotalText));
         Raise(nameof(Summary));
         Changed?.Invoke(this, EventArgs.Empty);
     }

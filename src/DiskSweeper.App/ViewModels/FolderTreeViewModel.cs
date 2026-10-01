@@ -27,7 +27,7 @@ public sealed class TreeRowViewModel(FileNode node, int depth, FolderTreeViewMod
 
     public string Name => Node.Name;
 
-    public string Icon => Node.IsLink ? "" : Node.IsDirectory ? "" : "";
+    public string Icon => Node.IsLink ? Icons.Link : Node.IsDirectory ? Icons.Folder : Icons.File;
 
     public string Tag => Node.IsLink ? "link, not followed" : Node.IsUnreadable ? "no access" : Node.IsCloudOnly ? "online-only" : "";
 
@@ -41,11 +41,11 @@ public sealed class TreeRowViewModel(FileNode node, int depth, FolderTreeViewMod
 
     public string ShareText => $"{Share:P1}";
 
-    public double BarWidth => Math.Max(0, Share * 120);
+    public double BarWidth => Math.Max(0, Share * 70);
 
     public string FilesText => Node.IsDirectory ? Node.FileCount.ToString("N0") : "";
 
-    public string ModifiedText => Node.LastWriteTimeUtc > DateTime.MinValue.AddYears(1) ? Node.LastWriteTimeUtc.ToLocalTime().ToString("yyyy-MM-dd") : "";
+    public string ModifiedText => Node.LastWriteTimeUtc > DateTime.MinValue.AddYears(1) ? Node.LastWriteTimeUtc.ToLocalTime().ToString("d MMM yyyy") : "";
 
     /// <summary>Protected things (drives, Windows, your profile) can't be ticked, so they can't be deleted by accident.</summary>
     public bool CanSelect => Depth > 0 && ProtectedPaths.WhyProtected(Node.FullPath) is null;
@@ -111,6 +111,10 @@ public sealed class FolderTreeViewModel : ObservableObject
         get => _selectedRow;
         set => Set(ref _selectedRow, value);
     }
+
+    public TreeSort Sort => _sort;
+
+    public bool Descending => _descending;
 
     public string SortDescription => $"Sorted by {_sort.ToString().ToLowerInvariant()}, {(_descending ? "largest/newest first" : "smallest/oldest first")}";
 
