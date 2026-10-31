@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using DiskSweeper.Core;
 using DiskSweeper.Core.Deletion;
 
@@ -25,6 +27,7 @@ public static class ElevatedRunner
         foreach (var job in AdminJob.Split(action, paths, method))
         {
             string resultFile = Path.Join(Path.GetTempPath(), $"DiskSweeper-{Guid.NewGuid():N}.json");
+            CreateResultFile(resultFile);
             var start = new ProcessStartInfo(Environment.ProcessPath!)
             {
                 UseShellExecute = true,
@@ -68,6 +71,9 @@ public static class ElevatedRunner
     /// <summary>Entry point of the hidden elevated copy. Returns the process exit code.</summary>
     public static int RunHelper(string encodedJob, string resultFile)
     {
+        // Refuse before doing any work. A crafted command line must not delete files or write outside temp.
+        if (!AdminJob.IsAcceptableResultFile(resultFile)) return 1;
+
         try
         {
             var job = AdminJob.Decode(encodedJob);
@@ -77,14 +83,50 @@ public static class ElevatedRunner
         }
         catch (Exception ex)
         {
-            try
-            {
-                File.WriteAllText(resultFile + ".error.txt", ex.ToString());
-            }
-            catch (IOException)
-            {
-            }
+            TryWriteError(resultFile, ex);
             return 1;
+        }
+    }
+
+    /// <summary>Creates the result file first so its name is fixed before the permission prompt, and only this user can replace it.</summary>
+    private static void CreateResultFile(string path)
+    {
+        using (new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+        {
+        }
+
+        try
+        {
+            var user = WindowsIdentity.GetCurrent().User;
+            if (user is null) return;
+
+            var security = new FileSecurity();
+            security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+            var rights = FileSystemRights.Read | FileSystemRights.Write | FileSystemRights.Delete;
+            security.AddAccessRule(new FileSystemAccessRule(user, rights, AccessControlType.Allow));
+            security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null), rights, AccessControlType.Allow));
+            security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), rights, AccessControlType.Allow));
+            new FileInfo(path).SetAccessControl(security);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IdentityNotMappedException or PlatformNotSupportedException or InvalidOperationException or IOException)
+        {
+            // The path check still keeps the write inside this temp file.
+        }
+    }
+
+    private static void TryWriteError(string resultFile, Exception ex)
+    {
+        if (!AdminJob.IsAcceptableResultFile(resultFile)) return;
+
+        string full = Path.GetFullPath(resultFile);
+        string errorFile = Path.Join(Path.GetDirectoryName(full)!, Path.GetFileName(full) + ".error.txt");
+        try
+        {
+            if (File.Exists(errorFile) && (File.GetAttributes(errorFile) & FileAttributes.ReparsePoint) != 0) return;
+            File.WriteAllText(errorFile, ex.ToString());
+        }
+        catch (Exception writeError) when (writeError is IOException or UnauthorizedAccessException)
+        {
         }
     }
 

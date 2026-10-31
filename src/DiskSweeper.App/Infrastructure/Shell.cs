@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using DiskSweeper.Core;
+using DiskSweeper.Core.SmartFinds;
 
 namespace DiskSweeper.App.Infrastructure;
 
@@ -32,22 +33,32 @@ public static class Shell
     public static void OpenUrl(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
 
     /// <summary>
-    /// Opens a command the user chose to run from a Cleanup advice (e.g. a Settings page or
-    /// System Properties). Commands that need a terminal open in an administrator PowerShell window.
+    /// Opens a command the user chose to run from a Cleanup advice (a Settings page or System Properties).
+    /// Commands that need a terminal open in an administrator PowerShell window. Returns false when the
+    /// command is not one of the shapes DiskSweeper ships (so a changed rules file can't launch an arbitrary program).
     /// </summary>
-    public static void RunAdvice(string command)
+    public static bool RunAdvice(string command)
     {
+        if (!AdviceCommands.IsAllowed(command)) return false;
+
         if (command.StartsWith("start ", StringComparison.OrdinalIgnoreCase))
         {
             OpenUrl(command[6..].Trim());
+            return true;
         }
-        else if (command.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+
+        if (command.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
         {
             Process.Start(new ProcessStartInfo(command) { UseShellExecute = true });
+            return true;
         }
-        else
+
+        Process.Start(new ProcessStartInfo("powershell.exe")
         {
-            Process.Start(new ProcessStartInfo("powershell.exe", $"-NoExit -Command \"{command}\"") { UseShellExecute = true, Verb = "runas" });
-        }
+            UseShellExecute = true,
+            Verb = "runas",
+            ArgumentList = { "-NoExit", "-NoProfile", "-Command", command },
+        });
+        return true;
     }
 }

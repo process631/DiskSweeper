@@ -40,6 +40,13 @@ public sealed class DeletionLog
         }
     }
 
-    private static string Csv(string value) =>
-        value.IndexOfAny([',', '"', '\n', '\r']) < 0 ? value : "\"" + value.Replace("\"", "\"\"") + "\"";
+    private static string Csv(string value)
+    {
+        // A file name can start with =, +, - or @. Excel would treat that cell as a formula.
+        bool neutralize = value.Length > 0 && value[0] is '=' or '+' or '-' or '@' or '\t' or '\r';
+        if (neutralize) value = "'" + value;
+
+        if (!neutralize && value.IndexOfAny([',', '"', '\n', '\r']) < 0) return value;
+        return "\"" + value.Replace("\"", "\"\"") + "\"";
+    }
 }

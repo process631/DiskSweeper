@@ -485,3 +485,16 @@ $RECYCLE.BIN/
 
 # The template's *.app rule (macOS app bundles) also matches the DiskSweeper.App project folder on Windows.
 !src/DiskSweeper.App/
+
+# Local secrets. This repo has none; keep new ones out of git.
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
+# Crash dumps and editor backups
+*.dmp
+*.orig
+*.rej

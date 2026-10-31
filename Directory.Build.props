@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <Product>DiskSweeper</Product>
+    <Company>DiskSweeper</Company>
+    <Copyright>Copyright © 2026 DiskSweeper contributors</Copyright>
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+</Project>

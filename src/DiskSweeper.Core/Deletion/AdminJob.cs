@@ -53,8 +53,74 @@ public sealed record AdminJob(AdminAction Action, IReadOnlyList<string> Paths, D
             _ => service.Delete(path, Method, cancellationToken: cancellationToken),
         }).ToList();
 
-    public static void WriteResults(string file, IReadOnlyList<DeleteResult> results) =>
-        File.WriteAllText(file, JsonSerializer.Serialize(results, Json));
+    /// <summary>
+    /// True when <paramref name="path"/> is a <c>DiskSweeper-{32 hex}.json</c> file directly in the temp folder.
+    /// The elevated helper will not write anywhere else, and it will not follow a link planted at that name.
+    /// </summary>
+    public static bool IsAcceptableResultFile(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return false;
+
+        string full;
+        try
+        {
+            full = Path.GetFullPath(path);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
+
+        // A second colon is an NTFS alternate data stream (C:\Temp\file.json:evil), not part of the file name.
+        int colon = full.IndexOf(':');
+        if (colon >= 0 && full.IndexOf(':', colon + 1) >= 0) return false;
+
+        const string prefix = "DiskSweeper-";
+        const string suffix = ".json";
+        string name = Path.GetFileName(full);
+        if (name.Length != prefix.Length + 32 + suffix.Length
+            || !name.StartsWith(prefix, StringComparison.Ordinal)
+            || !name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        foreach (char c in name.AsSpan(prefix.Length, 32))
+        {
+            if (!Uri.IsHexDigit(c)) return false;
+        }
+
+        string? directory = Path.GetDirectoryName(full);
+        if (string.IsNullOrEmpty(directory)) return false;
+
+        string temp = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (!string.Equals(Path.TrimEndingDirectorySeparator(directory), temp, comparison)) return false;
+
+        try
+        {
+            // GetAttributes does not follow the last component, so a dangling symlink is visible here
+            // even though File.Exists is false for it.
+            if ((File.GetAttributes(full) & FileAttributes.ReparsePoint) != 0) return false;
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static void WriteResults(string file, IReadOnlyList<DeleteResult> results)
+    {
+        if (!IsAcceptableResultFile(file))
+            throw new ArgumentException("Result file must be a DiskSweeper-*.json file directly in the temp folder.", nameof(file));
+
+        File.WriteAllText(Path.GetFullPath(file), JsonSerializer.Serialize(results, Json));
+    }
 
     public static IReadOnlyList<DeleteResult> ReadResults(string file) =>
         JsonSerializer.Deserialize<List<DeleteResult>>(File.ReadAllText(file), Json) ?? [];
