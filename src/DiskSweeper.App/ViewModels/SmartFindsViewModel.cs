@@ -211,7 +211,9 @@ public sealed class SmartFindsViewModel : ObservableObject
     private void RunAdvice(object? parameter)
     {
         if (parameter is not string command) return;
-        if (Dialogs.Confirm($"Run this?\n\n{command}\n\nCommands that change Windows settings open in an administrator PowerShell window so you can see what happens."))
-            Shell.RunAdvice(command);
+        if (!Dialogs.Confirm($"Run this?\n\n{command}\n\nCommands that change Windows settings open in an administrator PowerShell window so you can see what happens."))
+            return;
+        if (!Shell.RunAdvice(command))
+            Dialogs.Info("DiskSweeper didn't run that command. Copy it and run it yourself if you still want to.");
     }
 }

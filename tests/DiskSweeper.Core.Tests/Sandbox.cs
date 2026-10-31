@@ -111,6 +111,13 @@ public sealed class AdminFactAttribute : FactAttribute
 {
     public AdminFactAttribute()
     {
-        if (!Elevation.IsElevated) Skip = "Needs an administrator terminal.";
+        try
+        {
+            if (!Elevation.IsElevated) Skip = "Needs an administrator terminal.";
+        }
+        catch (Exception ex) when (ex is PlatformNotSupportedException or TypeInitializationException)
+        {
+            Skip = "Needs Windows.";
+        }
     }
 }

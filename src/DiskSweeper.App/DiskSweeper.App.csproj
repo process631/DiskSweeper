@@ -10,6 +10,8 @@
     <RootNamespace>DiskSweeper.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\DiskSweeper.ico</ApplicationIcon>
+    <!-- The app runs only on Windows. This lets the project compile on other systems too. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <!-- WPF's Fluent theme (light/dark following Windows) is marked experimental in .NET 9. -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
   </PropertyGroup>
