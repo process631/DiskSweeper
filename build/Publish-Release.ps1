@@ -71,6 +71,91 @@ function Assert-PeExecutable([string] $Path) {
     }
 }
 
+if (-not ('DiskSweeper.ManifestReader' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace DiskSweeper
+{
+    public static class ManifestReader
+    {
+        const uint LoadAsDataFile = 0x00000002;
+        const uint LoadAsImageResource = 0x00000020;
+
+        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Unicode)]
+        static extern IntPtr LoadLibraryEx(string fileName, IntPtr file, uint flags);
+
+        [DllImport("kernel32", SetLastError = true)]
+        static extern IntPtr FindResource(IntPtr module, IntPtr name, IntPtr type);
+
+        [DllImport("kernel32", SetLastError = true)]
+        static extern IntPtr LoadResource(IntPtr module, IntPtr resource);
+
+        [DllImport("kernel32")]
+        static extern IntPtr LockResource(IntPtr data);
+
+        [DllImport("kernel32", SetLastError = true)]
+        static extern uint SizeofResource(IntPtr module, IntPtr resource);
+
+        [DllImport("kernel32", SetLastError = true)]
+        static extern bool FreeLibrary(IntPtr module);
+
+        public static string Read(string path)
+        {
+            Exception last = null;
+            uint[] flags = { LoadAsDataFile | LoadAsImageResource, LoadAsImageResource, LoadAsDataFile };
+            foreach (uint flag in flags)
+            {
+                IntPtr module = LoadLibraryEx(path, IntPtr.Zero, flag);
+                if (module == IntPtr.Zero)
+                {
+                    last = new Win32Exception(Marshal.GetLastWin32Error(), "LoadLibraryEx");
+                    continue;
+                }
+                try
+                {
+                    // RT_MANIFEST is 24. Application manifests are resource id 1, sometimes 2.
+                    foreach (int id in new[] { 1, 2 })
+                    {
+                        IntPtr resource = FindResource(module, (IntPtr)id, (IntPtr)24);
+                        if (resource == IntPtr.Zero) continue;
+                        uint size = SizeofResource(module, resource);
+                        if (size == 0) continue;
+                        IntPtr data = LockResource(LoadResource(module, resource));
+                        if (data == IntPtr.Zero) continue;
+                        byte[] bytes = new byte[size];
+                        Marshal.Copy(data, bytes, 0, (int)size);
+                        return Decode(bytes);
+                    }
+                    last = new InvalidOperationException("The executable has no manifest resource.");
+                }
+                finally
+                {
+                    FreeLibrary(module);
+                }
+            }
+            throw last ?? new InvalidOperationException("Could not load the executable.");
+        }
+
+        static string Decode(byte[] bytes)
+        {
+            if (bytes.Length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE)
+                return Encoding.Unicode.GetString(bytes);
+            if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+                return Encoding.UTF8.GetString(bytes);
+            int zeros = 0;
+            for (int i = 1; i < Math.Min(bytes.Length, 64); i += 2)
+                if (bytes[i] == 0) zeros++;
+            return zeros > 8 ? Encoding.Unicode.GetString(bytes) : Encoding.UTF8.GetString(bytes);
+        }
+    }
+}
+'@
+}
+
 function Get-ManifestTool {
     $roots = @(
         "${env:ProgramFiles(x86)}\Windows Kits\10\bin",
@@ -85,21 +170,50 @@ function Get-ManifestTool {
     return $found | Sort-Object FullName -Descending | Select-Object -First 1
 }
 
-function Get-EmbeddedManifest([string] $Path) {
+function Read-ManifestWithMt([string] $Path) {
     $mt = Get-ManifestTool
-    if (-not $mt) {
-        throw "Windows SDK mt.exe was not found, so the application manifest could not be checked."
+    if (-not $mt) { throw "Windows SDK mt.exe was not found." }
+    $errors = @()
+    foreach ($id in @('#1', '#2')) {
+        $out = Join-Path ([System.IO.Path]::GetTempPath()) ("disksweeper-manifest-" + [guid]::NewGuid().ToString('n') + '.xml')
+        $output = & $mt.FullName -nologo "-inputresource:${Path};$id" "-out:$out" 2>&1 | Out-String
+        try {
+            if ((Test-Path $out) -and (Get-Item $out).Length -gt 0) {
+                $text = Get-Content -Raw -Path $out
+                if ($text -match 'assembly') { return $text }
+            }
+        }
+        finally {
+            Remove-Item $out -Force -ErrorAction SilentlyContinue
+        }
+        $errors += "mt.exe $id exited ${LASTEXITCODE}: $($output.Trim())"
     }
-    $out = Join-Path ([System.IO.Path]::GetTempPath()) ("disksweeper-manifest-" + [guid]::NewGuid().ToString('n') + '.xml')
-    & $mt.FullName -nologo "-inputresource:${Path};#1" "-out:$out"
-    if ($LASTEXITCODE -ne 0) {
-        throw "mt.exe could not read the manifest embedded in $Path."
+    throw ($errors -join ' ')
+}
+
+function Get-EmbeddedManifest([string] $Path) {
+    $lastError = $null
+    foreach ($try in 1..4) {
+        try {
+            return [DiskSweeper.ManifestReader]::Read($Path)
+        }
+        catch {
+            $lastError = $_.Exception.Message
+            # An arm64 exe cannot be loaded on this x64 runner. mt.exe only parses the file.
+            if ($lastError -match 'not a valid Win32 application|BadImageFormat|193') { break }
+            if ($lastError -match 'used by another process|error 32|sharing') {
+                Start-Sleep -Seconds 2
+                continue
+            }
+            break
+        }
     }
+
     try {
-        return Get-Content -Raw -Path $out
+        return Read-ManifestWithMt $Path
     }
-    finally {
-        Remove-Item $out -Force -ErrorAction SilentlyContinue
+    catch {
+        throw "Could not read the manifest in ${Path}. Win32: $lastError. $($_.Exception.Message)"
     }
 }
 
@@ -282,7 +396,11 @@ function Test-InstalledSetup {
         }
         $shell = New-Object -ComObject WScript.Shell
         $target = $shell.CreateShortcut($shortcuts[0].FullName).TargetPath
-        $expectedTarget = Join-Path $installDir 'DiskSweeper.exe'
+        if ([string]::IsNullOrWhiteSpace($target)) {
+            throw "Start menu shortcut '$($shortcuts[0].FullName)' has no target."
+        }
+        $target = [System.IO.Path]::GetFullPath($target)
+        $expectedTarget = [System.IO.Path]::GetFullPath((Join-Path $installDir 'DiskSweeper.exe'))
         if ($target -ine $expectedTarget) {
             throw "Start menu shortcut points at '$target', expected '$expectedTarget'."
         }
@@ -315,11 +433,17 @@ function Test-InstalledSetup {
         }
         $installed = $false
 
-        $shortcutsLeft = @(Get-ChildItem -Path (Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs') -Filter 'DiskSweeper.lnk' -Recurse -ErrorAction SilentlyContinue)
+        # unins000.exe removes itself after the process exits, so give it a moment.
+        $deadline = (Get-Date).AddSeconds(20)
+        do {
+            $shortcutsLeft = @(Get-ChildItem -Path (Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs') -Filter 'DiskSweeper.lnk' -Recurse -ErrorAction SilentlyContinue)
+            $left = @(Get-ChildItem $installDir -Force -ErrorAction SilentlyContinue)
+            if ($shortcutsLeft.Count -eq 0 -and $left.Count -eq 0) { break }
+            Start-Sleep -Seconds 1
+        } while ((Get-Date) -lt $deadline)
         if ($shortcutsLeft.Count -gt 0) {
             throw "Uninstall left the Start menu shortcut in place."
         }
-        $left = @(Get-ChildItem $installDir -Force -ErrorAction SilentlyContinue)
         if ($left.Count -gt 0) {
             throw "Uninstall left files behind: $($left.Name -join ', ')"
         }
