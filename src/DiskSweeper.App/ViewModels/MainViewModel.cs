@@ -20,6 +20,7 @@ public enum MainTab
     Treemap,
     Types,
     Cleanup,
+    Programs,
     Changes,
     History,
     Settings,
@@ -59,6 +60,7 @@ public sealed class MainViewModel : ObservableObject
         [MainTab.Treemap] = ("Treemap", "Each block is a file, sized by the space it uses. Double-click a folder to zoom in."),
         [MainTab.Types] = ("File types", "Which kinds of files take the most space."),
         [MainTab.Cleanup] = ("Cleanup", "Junk, leftovers of uninstalled games and programs, and old downloads."),
+        [MainTab.Programs] = ("Programs & Games", "Search for an installed program or game and remove it, including the files it leaves behind."),
         [MainTab.Changes] = ("Changes", "What grew or shrank since an earlier scan."),
         [MainTab.History] = ("Deletion history", "Everything DiskSweeper has deleted, newest first."),
         [MainTab.Settings] = ("Settings", "How DiskSweeper scans and deletes."),
@@ -99,6 +101,15 @@ public sealed class MainViewModel : ObservableObject
         log ??= new DeletionLog();
         Log = new LogViewModel(log);
         Coordinator = new DeleteCoordinator(new DeleteService(log));
+        Programs = new ProgramsViewModel(Coordinator, settings);
+        Programs.RemovingChanged += busy =>
+        {
+            IsDeleting = busy;
+            ProgressIndeterminate = busy;
+            if (!busy) ProgressText = "";
+        };
+        Programs.Progress += text => ProgressText = text;
+        Programs.Notify += (message, error) => ShowNotice(message, error);
 
         // The details panel follows whatever was clicked last in the folder tree or the file list.
         Tree.PropertyChanged += (_, e) =>
@@ -119,13 +130,14 @@ public sealed class MainViewModel : ObservableObject
             new(MainTab.Treemap, "Treemap", Icons.Tiles),
             new(MainTab.Types, "File types", Icons.Pie),
             new(MainTab.Cleanup, "Cleanup", Icons.Broom),
+            new(MainTab.Programs, "Programs", Icons.Game),
             new(MainTab.Changes, "Changes", Icons.Trending),
             new(MainTab.History, "History", Icons.History),
         ];
         SettingsNav = new NavItem(MainTab.Settings, "Settings", Icons.Settings);
 
         ScanCommand = new AsyncCommand(ScanAsync, () => !IsScanning && !IsDeleting);
-        CancelCommand = new RelayCommand(() => _cancel?.Cancel(), () => IsScanning || IsDeleting);
+        CancelCommand = new RelayCommand(() => { _cancel?.Cancel(); Programs.CancelActive(); }, () => IsScanning || IsDeleting);
         BrowseCommand = new RelayCommand(Browse, () => !IsScanning);
         DeleteSelectedCommand = new AsyncCommand(DeleteSelectedAsync, () => Selection.Count > 0 && !IsScanning && !IsDeleting);
         FindCommand = new AsyncCommand(() => SmartFinds.FindAsync(_scan), () => !SmartFinds.IsBusy && !IsScanning);
@@ -174,6 +186,8 @@ public sealed class MainViewModel : ObservableObject
     public TreemapViewModel Treemap { get; }
 
     public SmartFindsViewModel SmartFinds { get; }
+
+    public ProgramsViewModel Programs { get; }
 
     public ChangesViewModel Changes { get; }
 
@@ -251,6 +265,7 @@ public sealed class MainViewModel : ObservableObject
             Raise(nameof(IsSettingsSelected));
             if (value == MainTab.History) Log.Refresh();
             if (value == MainTab.Cleanup && !SmartFinds.HasRun && !SmartFinds.IsBusy && HasScan) FindCommand.Execute(null);
+            if (value == MainTab.Programs) Programs.EnsureLoaded();
         }
     }
 

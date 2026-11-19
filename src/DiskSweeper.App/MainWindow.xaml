@@ -158,6 +158,7 @@
                 <pages:TreemapPage Visibility="{Binding SelectedTab, Converter={x:Static views:EnumVisibilityConverter.Instance}, ConverterParameter=Treemap}" />
                 <pages:TypesPage Visibility="{Binding SelectedTab, Converter={x:Static views:EnumVisibilityConverter.Instance}, ConverterParameter=Types}" />
                 <pages:CleanupPage Visibility="{Binding SelectedTab, Converter={x:Static views:EnumVisibilityConverter.Instance}, ConverterParameter=Cleanup}" />
+                <pages:ProgramsPage Visibility="{Binding SelectedTab, Converter={x:Static views:EnumVisibilityConverter.Instance}, ConverterParameter=Programs}" />
                 <pages:ChangesPage Visibility="{Binding SelectedTab, Converter={x:Static views:EnumVisibilityConverter.Instance}, ConverterParameter=Changes}" />
                 <pages:HistoryPage Visibility="{Binding SelectedTab, Converter={x:Static views:EnumVisibilityConverter.Instance}, ConverterParameter=History}" />
                 <pages:SettingsPage Visibility="{Binding SelectedTab, Converter={x:Static views:EnumVisibilityConverter.Instance}, ConverterParameter=Settings}" />

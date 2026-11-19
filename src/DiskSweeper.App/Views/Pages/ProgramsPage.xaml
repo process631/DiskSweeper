@@ -1,0 +1,135 @@
+<UserControl x:Class="DiskSweeper.App.Views.Pages.ProgramsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1.15*" MinWidth="360" />
+            <ColumnDefinition Width="16" />
+            <ColumnDefinition Width="1.35*" MinWidth="420" />
+        </Grid.ColumnDefinitions>
+
+        <DockPanel>
+            <Border DockPanel.Dock="Top" Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,12">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource SubtleButton}" Command="{Binding Programs.RefreshCommand}" Margin="8,0,0,0" ToolTip="Look up installed programs again">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" FontSize="14" Text="&#xE72C;" Margin="0,0,8,0" />
+                            <TextBlock Text="Refresh" />
+                        </StackPanel>
+                    </Button>
+                    <Grid>
+                        <TextBox Text="{Binding Programs.Search, UpdateSourceTrigger=PropertyChanged, Delay=200}" Padding="34,6,8,6"
+                                 ToolTip="Search by name, publisher or install folder. Try Fortnite or Roblox." />
+                        <TextBlock Style="{StaticResource Icon}" FontSize="14" Text="&#xE721;" Margin="12,0,0,0" IsHitTestVisible="False"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </Grid>
+                </DockPanel>
+            </Border>
+            <TextBlock DockPanel.Dock="Top" Text="{Binding Programs.Status}" Style="{StaticResource Secondary}" Margin="2,0,0,8" TextWrapping="Wrap" />
+            <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Margin="0,0,0,8" Height="4"
+                         Visibility="{Binding Programs.IsLoading, Converter={StaticResource BoolToVisibility}}" />
+            <Border Style="{StaticResource Card}" Padding="4">
+                <DataGrid Style="{StaticResource AppGrid}" ItemsSource="{Binding Programs.Rows}" SelectedItem="{Binding Programs.Selected}"
+                          IsReadOnly="True" HeadersVisibility="Column">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" ElementStyle="{StaticResource CellText}" />
+                        <DataGridTextColumn Header="Publisher" Binding="{Binding Publisher}" Width="*" ElementStyle="{StaticResource CellText}" />
+                        <DataGridTextColumn Header="Source" Binding="{Binding Source}" Width="120" ElementStyle="{StaticResource CellText}" />
+                        <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" SortMemberPath="SizeSort" Width="90" ElementStyle="{StaticResource NumberCell}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+        </DockPanel>
+
+        <Border Grid.Column="2" Style="{StaticResource Card}" Padding="18,16">
+            <Grid>
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
+                            Visibility="{Binding Programs.HasSelection, Converter={StaticResource InverseBoolToVisibility}}">
+                    <TextBlock Style="{StaticResource Icon}" FontSize="28" Text="&#xE7FC;" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="Choose a program or game" Style="{StaticResource Strong}" HorizontalAlignment="Center" Margin="0,12,0,0" />
+                    <TextBlock Text="You'll see its install folder, leftovers, shortcuts and registry keys before anything is removed."
+                               Style="{StaticResource Secondary}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,6,0,0" MaxWidth="360" />
+                </StackPanel>
+
+                <DockPanel Visibility="{Binding Programs.HasSelection, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
+                        <TextBlock Text="{Binding Programs.SelectionSummary}" Style="{StaticResource Secondary}" Margin="0,0,0,10" TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource PrimaryButton}" Command="{Binding Programs.DeleteCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" FontSize="14" Text="&#xE74D;" Margin="0,0,8,0" />
+                                    <TextBlock Text="Delete…" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource StandardButton}" Command="{Binding Programs.PreviewCommand}" Content="Preview" Margin="8,0,0,0"
+                                    ToolTip="Dry run: show what would be removed, and write it to the history, without changing anything." />
+                            <Button Style="{StaticResource SubtleButton}" Command="{Binding Programs.OpenLocationCommand}" Margin="8,0,0,0" ToolTip="Show the install folder in Explorer">
+                                <TextBlock Style="{StaticResource Icon}" FontSize="14" Text="&#xE838;" />
+                            </Button>
+                            <Button Style="{StaticResource SubtleButton}" Command="{Binding Programs.CopyLocationCommand}" Margin="4,0,0,0" ToolTip="Copy the install path">
+                                <TextBlock Style="{StaticResource Icon}" FontSize="14" Text="&#xE8C8;" />
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Programs.Selected.Name}" FontFamily="{StaticResource DisplayFont}" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <TextBlock Style="{StaticResource Secondary}" Margin="0,2,0,0">
+                                <Run Text="{Binding Programs.Selected.Source, Mode=OneWay}" />
+                                <Run Text=" · " />
+                                <Run Text="{Binding Programs.Selected.Publisher, Mode=OneWay}" />
+                            </TextBlock>
+                            <TextBlock Text="{Binding Programs.Selected.Location}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,4,0,0" />
+
+                            <Border Style="{StaticResource NoticeBar}" Tag="Caution" Margin="0,14,0,0"
+                                    Visibility="{Binding Programs.IsThisApp, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock TextWrapping="Wrap" Text="DiskSweeper can't remove itself while it's open. Uninstall it from Settings &gt; Apps, or delete the portable file." />
+                            </Border>
+                            <Border Style="{StaticResource NoticeBar}" Margin="0,14,0,0" Visibility="{Binding Programs.HasNote, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{Binding Programs.Note}" TextWrapping="Wrap" />
+                            </Border>
+                            <ProgressBar IsIndeterminate="True" Height="4" Margin="0,14,0,0"
+                                         Visibility="{Binding Programs.IsDetailBusy, Converter={StaticResource BoolToVisibility}}" />
+                            <TextBlock Text="Checking what would be removed…" Style="{StaticResource Caption}" Margin="0,6,0,0"
+                                       Visibility="{Binding Programs.IsDetailBusy, Converter={StaticResource BoolToVisibility}}" />
+
+                            <TextBlock Text="What would be removed" Style="{StaticResource Strong}" Margin="0,16,0,4" />
+                            <TextBlock Style="{StaticResource Secondary}" Margin="0,0,0,8">
+                                <Run Text="Ticked total " /><Run Text="{Binding Programs.TotalText, Mode=OneWay}" FontWeight="SemiBold" />
+                                <Run Text=". Untick anything you want to keep. Protected and shared folders stay unticked." />
+                            </TextBlock>
+
+                            <ItemsControl ItemsSource="{Binding Programs.Items}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="28" />
+                                                <ColumnDefinition Width="28" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox IsChecked="{Binding IsChecked, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanSelect}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                                            <TextBlock Grid.Column="1" Style="{StaticResource Icon}" Text="{Binding Glyph}" VerticalAlignment="Top" />
+                                            <StackPanel Grid.Column="2" Margin="0,0,12,0">
+                                                <TextBlock>
+                                                    <Run Text="{Binding Title, Mode=OneWay}" FontWeight="SemiBold" />
+                                                    <Run Text=" · " Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                    <Run Text="{Binding Kind, Mode=OneWay}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Location}" Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                                                <TextBlock Text="{Binding Reason}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="3" Text="{Binding SizeText}" FontWeight="SemiBold" VerticalAlignment="Top" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

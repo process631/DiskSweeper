@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using DiskSweeper.Core.Programs;
 
 namespace DiskSweeper.Core.Deletion;
 
@@ -8,6 +9,9 @@ public enum AdminAction
     Delete,
     TakeOwnershipAndDelete,
     DeleteOnRestart,
+
+    /// <summary>Deletes one program's registry key. Paths are key paths, not files, and the same safety checks apply.</summary>
+    DeleteRegistryKey,
 }
 
 /// <summary>
@@ -50,6 +54,7 @@ public sealed record AdminJob(AdminAction Action, IReadOnlyList<string> Paths, D
         {
             AdminAction.TakeOwnershipAndDelete => service.TakeOwnershipAndDelete(path, Method, cancellationToken),
             AdminAction.DeleteOnRestart => service.ScheduleForRestart(path, cancellationToken),
+            AdminAction.DeleteRegistryKey => RegistryKeys.Delete(path, dryRun: false, service.Log),
             _ => service.Delete(path, Method, cancellationToken: cancellationToken),
         }).ToList();
 
