@@ -512,22 +512,33 @@ public class ProgramRemovalTests
 
     private static string Norm(string path) => LongPath.Normalize(path);
 
+    /// <summary>
+    /// File locations are normalized the same way the matcher stores them. Registry keys are not file paths:
+    /// <see cref="LongPath.Normalize"/> would resolve <c>HKCU\Software\...</c> against the working directory.
+    /// </summary>
+    private static string Expected(string location) =>
+        location.StartsWith("HKCU\\", StringComparison.OrdinalIgnoreCase)
+        || location.StartsWith("HKLM\\", StringComparison.OrdinalIgnoreCase)
+        || location.StartsWith("HKEY_", StringComparison.OrdinalIgnoreCase)
+            ? location
+            : Norm(location);
+
     private static void Selected(IReadOnlyList<RemovalItem> items, string path)
     {
-        string expected = Norm(path);
+        string expected = Expected(path);
         var item = items.SingleOrDefault(candidate => candidate.Location.Equals(expected, StringComparison.OrdinalIgnoreCase));
         Assert.True(item is { SelectedByDefault: true, Refusal: null }, $"Expected {expected} to be selected. Had: {Describe(items)}");
     }
 
     private static void Absent(IReadOnlyList<RemovalItem> items, string path)
     {
-        string expected = Norm(path);
+        string expected = Expected(path);
         Assert.True(items.All(item => !item.Location.Equals(expected, StringComparison.OrdinalIgnoreCase)), $"Did not expect {expected}. Had: {Describe(items)}");
     }
 
     private static void Refused(IReadOnlyList<RemovalItem> items, string path)
     {
-        string expected = Norm(path);
+        string expected = Expected(path);
         var item = items.SingleOrDefault(candidate => candidate.Location.Equals(expected, StringComparison.OrdinalIgnoreCase));
         Assert.True(item is { SelectedByDefault: false, Refusal: not null }, $"Expected {expected} to be refused. Had: {Describe(items)}");
     }
