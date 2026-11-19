@@ -41,9 +41,10 @@ public static class ElevatedRunner
             catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
             {
                 // ERROR_CANCELLED: "No" at the Windows permission prompt.
+                var reason = job.Action == AdminAction.DeleteRegistryKey ? BlockReason.Other : BlockReason.AccessDenied;
                 results.AddRange(job.Paths.Select(path => new DeleteResult
                 {
-                    Path = path, Outcome = DeleteOutcome.Failed, Reason = BlockReason.AccessDenied,
+                    Path = path, Outcome = DeleteOutcome.Failed, Reason = reason,
                     Message = "Cancelled at the Windows permission prompt.",
                 }));
                 continue;

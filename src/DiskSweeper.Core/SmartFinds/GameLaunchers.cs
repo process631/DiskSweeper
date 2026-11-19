@@ -3,7 +3,7 @@ using Microsoft.Win32;
 
 namespace DiskSweeper.Core.SmartFinds;
 
-public sealed record InstalledGame(string Launcher, string Name, string? InstallPath, string? Id = null);
+public sealed record InstalledGame(string Launcher, string Name, string? InstallPath, string? Id = null, long? SizeBytes = null);
 
 /// <summary>What one game launcher knows: where its game folders live and which games it has installed.</summary>
 public sealed class LauncherState
@@ -87,7 +87,8 @@ public static class SteamLauncher
             if (state?["appid"] is not string appId) continue;
             string name = state["name"] ?? $"App {appId}";
             string? installDir = state["installdir"];
-            games.Add(new InstalledGame("Steam", name, installDir is null ? null : Path.Join(steamApps, "common", installDir), appId));
+            long? size = state["SizeOnDisk"] is string sizeText && long.TryParse(sizeText, out long bytes) && bytes > 0 ? bytes : null;
+            games.Add(new InstalledGame("Steam", name, installDir is null ? null : Path.Join(steamApps, "common", installDir), appId, size));
         }
         return games;
     }
@@ -113,7 +114,8 @@ public static class EpicLauncher
                     string name = root.TryGetProperty("DisplayName", out var n) ? n.GetString() ?? "" : "";
                     string? location = root.TryGetProperty("InstallLocation", out var l) ? l.GetString() : null;
                     string? id = root.TryGetProperty("AppName", out var a) ? a.GetString() : null;
-                    games.Add(new InstalledGame("Epic", name, location is null ? null : LongPath.Normalize(location), id));
+                    long? size = ReadSize(root);
+                    games.Add(new InstalledGame("Epic", name, location is null ? null : LongPath.Normalize(location), id, size));
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
                 {
@@ -142,6 +144,14 @@ public static class EpicLauncher
             GameRoots = roots,
             NonGameFolders = new HashSet<string>(["Launcher", "DirectXRedist", "Epic Online Services", "EpicOnlineServices"], StringComparer.OrdinalIgnoreCase),
         };
+    }
+
+    private static long? ReadSize(JsonElement root)
+    {
+        if (!root.TryGetProperty("InstallSize", out var size)) return null;
+        if (size.ValueKind == JsonValueKind.Number && size.TryGetInt64(out long bytes) && bytes > 0) return bytes;
+        if (size.ValueKind == JsonValueKind.String && long.TryParse(size.GetString(), out long parsed) && parsed > 0) return parsed;
+        return null;
     }
 
     private static IEnumerable<string> SafeFiles(string folder, string pattern)

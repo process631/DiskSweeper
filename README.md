@@ -1,7 +1,7 @@
 # DiskSweeper
 
 See what's taking up space on your PC, sorted biggest first, and safely delete what you choose, including
-leftover game files and folders that refuse to be deleted the normal way.
+a whole program or game (Fortnite, Roblox, and the rest) together with the leftover files it leaves behind.
 
 ## Download
 
@@ -49,6 +49,7 @@ A Windows 11–style app (follows your light/dark theme and accent color) with a
 | Treemap | Every file as a block sized by disk use, colored by type. Click for details, double-click to zoom in. |
 | File types | Space per kind (video, disk images, game data…) and per extension. Double-click an extension to list those files. |
 | Cleanup | Junk and leftovers worth cleaning, grouped by category, each with how much it frees and why it's considered safe. |
+| Programs | Search installed programs and games, see everything removal would touch, then uninstall and clean up what's left. |
 | Changes | What grew or shrank since an earlier scan (scans are saved automatically). |
 | History | Every delete attempt ever made, also saved as a CSV file. |
 | Settings | Fast scan, remembering scans, the default delete choice, and where DiskSweeper keeps its data. |
@@ -67,7 +68,38 @@ for Explorer, Treemap and Copy path). Tick items anywhere; a bar appears at the 
 - **Warnings** before deleting: OneDrive (deletes the cloud copy too), possible game saves, installed programs.
 - **Dry run** shows what would happen without touching anything.
 - Big (10 GB+) and permanent deletes need an extra confirmation tick.
-- Everything is logged to `%LOCALAPPDATA%\DiskSweeper\deletion-log.csv`.
+- Everything is logged to `%LOCALAPPDATA%\DiskSweeper\deletion-log.csv`, including program uninstalls and registry keys.
+
+### Removing a program or game
+
+**Programs** searches what is installed and, when you pick one, lists what deletion would remove. Nothing is deleted until you confirm, and **Preview** does a dry run that is written to the history.
+
+Where the list comes from:
+
+| Source | What it reads |
+|---|---|
+| Installed programs | Uninstall registry keys in HKLM and HKCU, both 64-bit and 32-bit (`WOW6432Node`). |
+| Steam | Libraries from `libraryfolders.vdf` and each game's `appmanifest`. Shader cache and workshop content for that app id are included. |
+| Epic Games | `.item` manifests under `ProgramData\Epic\EpicGamesLauncher\Data\Manifests`. |
+| GOG | Installed games under `HKLM\SOFTWARE\WOW6432Node\GOG.com\Games`. |
+| Roblox | The per-user install in `%LOCALAPPDATA%\Roblox\Versions` (Player and Studio separately). |
+| Microsoft Store | Packages registered for your user, except Windows components, frameworks and resource packs. |
+
+Picking an item shows the install folder, matching leftovers in AppData (Local, LocalLow, Roaming), ProgramData, Documents, Saved Games, temp, desktop and per-user Start menu shortcuts, and related registry keys. Each line has a size. Untick anything you want to keep. The total is the ticked files.
+
+**Delete** runs the official uninstaller first when there is one: a quiet uninstall string, `msiexec /qn`, or an Inno Setup `/VERYSILENT` switch. Anything else opens the program's own uninstaller. Steam games are handed to `steam://uninstall/<appid>`. Store apps are removed with `Remove-AppxPackage`. Files that remain are then moved to the Recycle Bin (or deleted permanently, if you switch). Registry keys are removed after the files.
+
+If the program or its launcher is still running, DiskSweeper asks to close it first. It does not close Steam when Steam itself is doing the uninstall. If Windows needs administrator rights, the uninstaller asks on its own, and HKLM registry keys are removed by the same short elevated helper the rest of the app uses.
+
+Safety limits, on purpose:
+
+- System folders, `WindowsApps`, launcher libraries (`Epic Games`, `steamapps\common`, `GOG Galaxy\Games`) and other shared parents are never deleted.
+- A leftover folder has to match the product name, not the publisher. Fortnite does not take folders named Epic, the Epic launcher, or a sibling such as Rocket League. Visual Studio does not take Visual Studio Code. Roblox does not take Roblox Studio, and the shared `%LOCALAPPDATA%\Roblox` folder is kept when both are installed.
+- A name that is only a generic word (`Games`, `App`, `Cache`) does not search for leftovers. Only that program's own install folder is offered, and a generic install location is refused.
+- A folder that also matches a different installed program is skipped.
+- Protected paths still can't be deleted. All-users Start menu shortcuts live under a Windows folder DiskSweeper will not change; the uninstaller usually removes those itself.
+- DiskSweeper will not uninstall itself while it is open.
+- Leftovers are looked for in the usual places, not by scanning the whole disk. A folder on another drive is removed when it is the install folder or a known owned folder (a Steam shader cache, for example).
 
 ### When something won't delete
 
@@ -97,8 +129,9 @@ Admin-only fixes run in a short-lived elevated copy of the app, so the main wind
   explained with the proper Windows tool or command instead of being deleted.
 
 Every item is marked **Safe** (can't break anything) or **Review** (very likely unneeded, look first).
-For removing programs completely (registry entries, services, scheduled tasks), the Cleanup page links to
-[Bulk Crap Uninstaller](https://github.com/Klocman/Bulk-Crap-Uninstaller), a free open-source uninstaller.
+For removing one installed program or game, use **Programs**. Cleanup still links to
+[Bulk Crap Uninstaller](https://github.com/Klocman/Bulk-Crap-Uninstaller) when you want a batch uninstaller
+that also removes services and scheduled tasks.
 
 ## Scanning
 
@@ -130,6 +163,7 @@ The command-line tool only reads; deleting happens in the app.
 src/DiskSweeper.Core      all logic, no UI
   Scanning/               folder walk, NTFS fast scan, tree model, in-place tree updates
   Deletion/               protected paths, delete service, lock finder, take ownership, delete on restart, log
+  Programs/               installed programs and games, strict leftover matching, uninstall, registry keys
   SmartFinds/             junk rules, Steam/Epic/GOG readers, installed-software inventory, leftover finder
   Analysis/               file types, treemap layout, saved scans, scan comparison
 src/DiskSweeper.App       WPF app (Windows light/dark theme)

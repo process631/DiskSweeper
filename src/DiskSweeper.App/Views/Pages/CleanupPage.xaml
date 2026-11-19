@@ -64,6 +64,10 @@
                         </StackPanel>
                     </Button>
                     <Button Style="{StaticResource StandardButton}" Command="{Binding SmartFinds.SelectSafeCommand}" Content="Select all safe" Margin="8,0,0,0" />
+                    <Button Style="{StaticResource SubtleButton}" Command="{Binding NavigateCommand}" CommandParameter="Programs" Margin="8,0,0,0"
+                            ToolTip="Remove one installed program or game, then the files it leaves behind.">
+                        <TextBlock Text="Programs &amp; Games" />
+                    </Button>
                     <Button Style="{StaticResource SubtleButton}" Command="{Binding FindCommand}" Margin="8,0,0,0" ToolTip="Look again">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource Icon}" FontSize="14" Text="&#xE72C;" Margin="0,0,8,0" />
