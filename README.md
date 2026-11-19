@@ -3,13 +3,39 @@
 See what's taking up space on your PC, sorted biggest first, and safely delete what you choose, including
 leftover game files and folders that refuse to be deleted the normal way.
 
-## Run it
+## Download
 
-- **App:** double-click `publish\DiskSweeper.exe`, or `dotnet run --project src/DiskSweeper.App`.
-  Use **Run as administrator** (bottom of the sidebar) for fast scans and protected folders.
-- **Command line:** `publish\dsweep.exe` (see [Command line](#command-line)).
+Windows 10 or 11. The .NET runtime is inside the download.
 
-Needs Windows 10/11 and the .NET 9 Desktop Runtime.
+| Download | Use it when |
+|---|---|
+| [DiskSweeper-Setup.exe](https://github.com/process631/DiskSweeper/releases/latest/download/DiskSweeper-Setup.exe) | You want a Start menu shortcut and an uninstaller. |
+| [DiskSweeper-win-x64.exe](https://github.com/process631/DiskSweeper/releases/latest/download/DiskSweeper-win-x64.exe) | You want one file to double-click, on 64-bit Windows. |
+| [DiskSweeper-win-x64.zip](https://github.com/process631/DiskSweeper/releases/latest/download/DiskSweeper-win-x64.zip) | You also want the `dsweep` command-line tool and the license. |
+| [DiskSweeper-win-arm64.zip](https://github.com/process631/DiskSweeper/releases/latest/download/DiskSweeper-win-arm64.zip) | You have Windows on ARM. A single [DiskSweeper-win-arm64.exe](https://github.com/process631/DiskSweeper/releases/latest/download/DiskSweeper-win-arm64.exe) is on the release too. |
+
+These links follow the [latest release](https://github.com/process631/DiskSweeper/releases/latest). Each release includes `SHA256SUMS.txt` so you can check the download.
+
+### Install
+
+1. Download **DiskSweeper-Setup.exe** and open it.
+2. Accept the Windows prompt that lets the installer copy files into Program Files. After that, DiskSweeper opens as a normal user.
+3. Finish the wizard, then open **DiskSweeper** from the Start menu.
+4. A desktop icon is an optional checkbox in the installer, off by default. Remove the app later from **Settings > Apps**.
+
+### Portable
+
+Download **DiskSweeper-win-x64.exe** and double-click it. Delete that file when you want it gone. The zip is the same app plus `dsweep.exe`, a short readme, and the license.
+
+The installer is the 64-bit build. It also runs on Windows 11 on ARM under emulation. The ARM zip is the native build.
+
+### Windows SmartScreen
+
+These downloads aren't code-signed. The first time you open one, Windows shows **Windows protected your PC** and an unknown publisher. Choose **More info**, then **Run anyway**.
+
+### Administrator
+
+DiskSweeper opens as a normal user. A fast scan of a whole NTFS drive reads that drive's file table and needs administrator rights. So do **Take ownership and delete** and **Delete on next restart**. **Run as administrator** at the bottom of the sidebar is where Windows asks. The application manifest is `asInvoker`, so that prompt stays on those actions.
 
 ## What's in the app
 
@@ -86,6 +112,8 @@ For removing programs completely (registry entries, services, scheduled tasks), 
 
 ## Command line
 
+`dsweep.exe` ships in the portable zip and in the install folder. From a source checkout: `dotnet run --project src/DiskSweeper.Cli -- --help`.
+
 ```
 dsweep                                 biggest folders and files on C:
 dsweep D:\ --depth 3 --files 20        another drive, shallower tree
@@ -107,18 +135,50 @@ src/DiskSweeper.Core      all logic, no UI
 src/DiskSweeper.App       WPF app (Windows light/dark theme)
 src/DiskSweeper.Cli       dsweep command-line tool
 tests/                    xUnit tests; destructive tests run only in throwaway folders under %TEMP%
+build/Publish-Release.ps1 release exes, zips, and the installer
+installer/                Inno Setup script (Start menu shortcut and uninstaller)
+.github/workflows/ci.yml  build, test, and the GitHub Release
 ```
 
-## Build and test
+## Build from source
+
+Developers need Windows 10 or 11 and the [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0).
 
 ```
 dotnet build
 dotnet test
-dotnet publish src/DiskSweeper.App -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o publish
+dotnet run --project src/DiskSweeper.App
 ```
 
 Run `dotnet test` from an **administrator** terminal to include the admin-only tests (fast scan, take
 ownership). From a normal terminal they're reported as skipped.
+
+`dotnet run` uses the SDK on your machine. Release builds bundle the runtime. To produce that executable locally:
+
+```
+dotnet publish src/DiskSweeper.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o publish
+```
+
+`build/Publish-Release.ps1` builds the app and `dsweep` for win-x64 and win-arm64, zips them, and compiles
+`DiskSweeper-Setup.exe`. The installer script needs [Inno Setup 7](https://jrsoftware.org/isdl.php). The
+script downloads it when `ISCC.exe` isn't already installed.
+
+### Publishing a release
+
+Pushes to `main` and pull requests build and test. A pull request also uploads the installers as a
+workflow artifact. Pushing a version tag, once this workflow is on `main`, publishes the download:
+
+```
+git checkout main
+git pull
+git tag -a v1.0.0 -m "DiskSweeper 1.0.0"
+git push origin v1.0.0
+```
+
+The tag is `v` plus `major.minor.patch` (a hyphen, as in `v1.0.0-rc.1`, marks a prerelease). GitHub Actions
+attaches the executables, the zips, the installer, and `SHA256SUMS.txt` to a GitHub Release and fills in
+the notes from the commits. To build those files without a release, open the **CI** workflow and choose
+**Run workflow**.
 
 ## Good to know
 
@@ -127,3 +187,7 @@ ownership). From a normal terminal they're reported as skipped.
 - App data (log, settings, the last five scans per drive) is in `%LOCALAPPDATA%\DiskSweeper`.
 - "Delete on next restart" hasn't been exercised on a real reboot during development. It uses the standard
   Windows mechanism (`MoveFileEx` with delay-until-reboot).
+
+## License
+
+[MIT](LICENSE). Copyright (c) 2026 process631.

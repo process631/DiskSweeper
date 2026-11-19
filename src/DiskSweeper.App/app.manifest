@@ -4,7 +4,12 @@
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
-        <!-- Starts as a normal user. Admin-only fixes ask for permission (UAC) when they're used. -->
+        <!--
+          asInvoker on purpose. A fast NTFS scan reads the Master File Table and needs
+          administrator rights, and so do take-ownership and delete-on-restart.
+          ElevatedRunner starts a copy of this exe with the runas verb so Windows asks
+          then. Everyday launch stays a normal user.
+        -->
         <requestedExecutionLevel level="asInvoker" uiAccess="false" />
       </requestedPrivileges>
     </security>

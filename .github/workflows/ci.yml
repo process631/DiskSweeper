@@ -1,0 +1,98 @@
+# Build and test on every push to main and every pull request.
+# Version tags (v1.0.0) publish GitHub Release downloads.
+# workflow_dispatch and pull requests build the same files and upload them as
+# artifacts only, so the publish path can be checked without a public release.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Test
+        run: dotnet test DiskSweeper.sln -c Release --nologo --logger "console;verbosity=minimal"
+
+  publish:
+    name: Publish Windows builds
+    needs: test
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'pull_request' ||
+      startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    timeout-minutes: 40
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Publish self-contained builds and installer
+        run: ./build/Publish-Release.ps1
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: DiskSweeper-windows
+          path: artifacts/dist/*
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          $tag = $env:GITHUB_REF_NAME
+          $files = @(Get-ChildItem artifacts/dist -File | ForEach-Object FullName)
+          gh release view $tag --repo $env:GITHUB_REPOSITORY
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag @files --repo $env:GITHUB_REPOSITORY --clobber
+            if ($LASTEXITCODE -ne 0) { throw "gh release upload failed." }
+          }
+          else {
+            $extra = @()
+            if ($tag -match '-') { $extra = @('--prerelease') }
+            gh release create $tag @files `
+              --repo $env:GITHUB_REPOSITORY `
+              --title "DiskSweeper $tag" `
+              --generate-notes `
+              --verify-tag `
+              @extra
+            if ($LASTEXITCODE -ne 0) { throw "gh release create failed." }
+          }

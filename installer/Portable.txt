@@ -1,0 +1,18 @@
+DiskSweeper
+
+DiskSweeper.exe is the app. dsweep.exe is the command-line tool (dsweep --help).
+The .NET runtime is included in both files.
+
+A portable copy is just these files. Delete them when you don't want DiskSweeper
+anymore. If you ran DiskSweeper-Setup.exe, open DiskSweeper from the Start menu
+and remove it later from Settings > Apps.
+
+Windows SmartScreen may say "Windows protected your PC" the first time you open
+a downloaded copy, and name an unknown publisher. This build isn't code-signed.
+Choose More info, then Run anyway.
+
+DiskSweeper opens as a normal user. For a fast whole-drive scan, use
+Run as administrator at the bottom of the sidebar. dsweep --fast needs an
+administrator terminal.
+
+License: MIT. See LICENSE.
