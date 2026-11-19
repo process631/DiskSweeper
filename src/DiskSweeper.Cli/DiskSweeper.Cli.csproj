@@ -7,6 +7,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>dsweep</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Description>See what's taking up space on your PC.</Description>
     <TargetFramework>net9.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
