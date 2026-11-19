@@ -225,7 +225,9 @@ function Assert-AsInvoker([string] $Path) {
     if ($manifest -match 'level="(requireAdministrator|highestAvailable)"') {
         throw "$Path requests elevation on every launch."
     }
-    if ($manifest -notmatch 'longPathAware') {
+    # The app manifest sets longPathAware. dsweep keeps the .NET host manifest, which is
+    # asInvoker and may omit that flag; the CLI already opts into long paths with the \\?\ prefix.
+    if ((Split-Path -Leaf $Path) -eq 'DiskSweeper.exe' -and $manifest -notmatch 'longPathAware') {
         throw "$Path is missing longPathAware."
     }
 }
